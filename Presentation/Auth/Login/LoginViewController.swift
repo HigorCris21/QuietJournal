@@ -135,18 +135,3 @@ final class LoginViewController: UIViewController {
         viewModel.registerTapped()
     }
 }
-```
-
----
-
-## Estrutura de pastas no Xcode
-```
-Presentation/
-    Auth/
-        AuthCoordinator.swift
-        Login/
-            LoginViewController.swift
-            LoginViewModel.swift
-        Register/
-            RegisterViewController.swift   ← próximo passo
-            RegisterViewModel.swift        ← próximo passo

@@ -151,30 +151,3 @@ final class RegisterViewController: UIViewController {
         viewModel.backTapped()
     }
 }
-```
-
----
-
-## Diferenças em relação ao Login
-
-O Register tem três validações **antes** de chamar o Firebase — isso evita chamadas de rede desnecessárias e dá feedback instantâneo ao usuário:
-```
-1. Campos vazios     → erro local, sem Firebase
-2. Senhas diferentes → erro local, sem Firebase
-3. Senha curta       → erro local, sem Firebase
-4. Tudo ok           → chama Firebase
-```
-
----
-
-## Commit no GitHub Desktop
-
-**Summary:**
-```
-Add Register flow - RegisterViewController and RegisterViewModel
-```
-**Description:**
-```
-- Add RegisterViewModel with local validations before Firebase call
-- Add RegisterViewController with ViewCode layout
-- Complete Auth flow: Login → Register → AppCoordinator
