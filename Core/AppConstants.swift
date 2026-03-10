@@ -17,7 +17,7 @@ enum AppConstants {
     // MARK: - Colors
 
     enum Colors {
-        static let primary    = UIColor(named: "PrimaryColor")
+        static let primary    = UIColor(named: "BrandColor")
         static let background = UIColor(named: "BackgroundColor")
         static let text       = UIColor(named: "TextColor")
     }
