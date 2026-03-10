@@ -22,5 +22,6 @@ protocol JournalServiceProtocol {
 
     // Deleta uma entrada pelo ID
     func deleteEntry(id: String,
+                     for uid: String,
                      completion: @escaping (Result<Void, Error>) -> Void)
 }
