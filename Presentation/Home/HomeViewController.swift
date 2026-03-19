@@ -13,7 +13,7 @@ final class HomeViewController: UIViewController {
 
     private lazy var tableView: UITableView = {
         let tv = UITableView()
-        tv.register(UITableViewCell.self, forCellReuseIdentifier: "EntryCell")
+        tv.rowHeight = UITableView.automaticDimension
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
     }()
@@ -130,7 +130,7 @@ extension HomeViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell  = tableView.dequeueReusableCell(withIdentifier: "EntryCell", for: indexPath)
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "EntryCell")
         let entry = viewModel.entries[indexPath.row]
 
         cell.textLabel?.text       = "\(entry.mood.emoji)  \(entry.title)"

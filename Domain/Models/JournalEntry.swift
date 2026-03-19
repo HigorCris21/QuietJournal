@@ -2,6 +2,7 @@
 // QuietJournal — Domain/Models
 
 import Foundation
+import FirebaseFirestore
 
 //Rrepresenta uma entrada (página) do diário.
 
@@ -39,8 +40,8 @@ extension JournalEntry {
             let body      = data["body"]      as? String,
             let moodRaw   = data["mood"]      as? String,
             let mood      = Mood(rawValue: moodRaw),
-            let createdAt = data["createdAt"] as? Date,
-            let updatedAt = data["updatedAt"] as? Date
+            let createdTs = data["createdAt"] as? Timestamp,
+            let updatedTs = data["updatedAt"] as? Timestamp
         else { return nil }
 
         return JournalEntry(
@@ -49,8 +50,8 @@ extension JournalEntry {
             title:     title,
             body:      body,
             mood:      mood,
-            createdAt: createdAt,
-            updatedAt: updatedAt
+            createdAt: createdTs.dateValue(),
+            updatedAt: updatedTs.dateValue()
         )
     }
 }

@@ -16,10 +16,15 @@ final class JournalService: JournalServiceProtocol {
 
     // MARK: - Fetch
 
+    private var listener: ListenerRegistration?
+
     func fetchEntries(for uid: String,
                       completion: @escaping (Result<[JournalEntry], Error>) -> Void) {
 
-        entriesCollection(for: uid)
+        // Cancela listener anterior se existir
+        listener?.remove()
+
+        listener = entriesCollection(for: uid)
             .order(by: "createdAt", descending: true)
             .addSnapshotListener { snapshot, error in
                 DispatchQueue.main.async {
