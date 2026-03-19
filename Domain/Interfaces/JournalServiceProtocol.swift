@@ -24,4 +24,6 @@ protocol JournalServiceProtocol {
     func deleteEntry(id: String,
                      for uid: String,
                      completion: @escaping (Result<Void, Error>) -> Void)
+    
+    func stopListening()
 }

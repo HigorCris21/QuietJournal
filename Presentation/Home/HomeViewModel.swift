@@ -52,6 +52,7 @@ final class HomeViewModel {
     }
 
     func logout() {
+        journalService.stopListening()
         onLogout?()
     }
 

@@ -38,13 +38,33 @@ final class JournalService: JournalServiceProtocol {
                         return
                     }
 
-                    let entries = documents.compactMap { doc in
-                        JournalEntry.fromFirestore(id: doc.documentID, data: doc.data())
+                    let entries = documents.compactMap { doc -> JournalEntry? in
+                        var data = doc.data()
+
+                        // Converte Timestamp → Date aqui na camada Data
+                        // O Domain (JournalEntry) não conhece Timestamp
+                        if let ts = data["createdAt"] as? Timestamp {
+                            data["createdAt"] = ts.dateValue()
+                        }
+                        if let ts = data["updatedAt"] as? Timestamp {
+                            data["updatedAt"] = ts.dateValue()
+                        }
+
+                        return JournalEntry.fromFirestore(id: doc.documentID, data: data)
                     }
+                    
+                    
 
                     completion(.success(entries))
                 }
             }
+    }
+    
+    //MARK: - Stop Listening
+    
+    func stopListening() {
+        listener?.remove()
+        listener = nil
     }
 
     // MARK: - Create
