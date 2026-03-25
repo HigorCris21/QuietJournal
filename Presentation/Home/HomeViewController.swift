@@ -72,14 +72,12 @@ final class HomeViewController: UIViewController {
     private func setupNavigationBar() {
         title = "QuietJournal"
 
-        // Botão de nova entrada
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .add,
             target: self,
             action: #selector(newEntryTapped)
         )
 
-        // Botão de logout
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             title: "Sair",
             style: .plain,
@@ -150,13 +148,31 @@ extension HomeViewController: UITableViewDelegate {
         viewModel.editEntry(viewModel.entries[indexPath.row])
     }
 
-    // Swipe para deletar
+    // ✅ ITEM 3 — Confirmação antes de deletar
     func tableView(_ tableView: UITableView,
                    commit editingStyle: UITableViewCell.EditingStyle,
                    forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            viewModel.deleteEntry(viewModel.entries[indexPath.row])
-        }
+
+        guard editingStyle == .delete else { return }
+
+        // Captura a entry ANTES de mostrar o alerta.
+        // Se o listener do Firestore atualizar a lista enquanto o alerta
+        // está aberto, o indexPath pode ficar desatualizado. Guardar a
+        // entry por referência garante que deletamos a coisa certa.
+        let entry = viewModel.entries[indexPath.row]
+
+        let alert = UIAlertController(
+            title: "Deletar entrada",
+            message: "Essa ação não pode ser desfeita. Deseja continuar?",
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+
+        alert.addAction(UIAlertAction(title: "Deletar", style: .destructive) { [weak self] _ in
+            self?.viewModel.deleteEntry(entry)
+        })
+
+        present(alert, animated: true)
     }
 }
-
