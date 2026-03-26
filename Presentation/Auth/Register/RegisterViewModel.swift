@@ -32,13 +32,19 @@ final class RegisterViewModel {
             return
         }
 
-        // Validação 2 — senhas coincidem
+        // ✅ ITEM 4 — Validação 2 — formato do email
+        guard email.isValidEmail else {
+            onError?("Digite um e-mail válido.")
+            return
+        }
+
+        // Validação 3 — senhas coincidem
         guard password == confirmPassword else {
             onError?("As senhas não coincidem.")
             return
         }
 
-        // Validação 3 — senha fraca
+        // Validação 4 — senha fraca
         guard password.count >= 6 else {
             onError?("A senha deve ter pelo menos 6 caracteres.")
             return

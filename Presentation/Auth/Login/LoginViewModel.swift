@@ -26,9 +26,19 @@ final class LoginViewModel {
 
     func login(email: String, password: String) {
 
-        // Validação local antes de chamar o Firebase
+        // Guarda 1 — campos vazios
+        // Verificação mais básica: nem tenta validar formato se estiver vazio
         guard !email.isEmpty, !password.isEmpty else {
             onError?("Preencha todos os campos.")
+            return
+        }
+
+        // ✅ ITEM 4 — Guarda 2 — formato do email
+        // Só chega aqui se os campos não estiverem vazios.
+        // Barra strings como "teste", "higor@@", "sem-arroba"
+        // antes de fazer qualquer chamada de rede.
+        guard email.isValidEmail else {
+            onError?("Digite um e-mail válido.")
             return
         }
 
