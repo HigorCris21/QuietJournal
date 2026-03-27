@@ -7,18 +7,16 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Callbacks
 
-    var onEntriesUpdated: (([JournalEntry]) -> Void)?
+    var onEntriesUpdated: (([EntryDisplayModel]) -> Void)?
     var onError:          ((String) -> Void)?
     var onLogout:         (() -> Void)?
     var onNewEntry:       (() -> Void)?
     var onEditEntry:      ((JournalEntry) -> Void)?
-
-    // Callback que avisa a ViewController para ligar/desligar o spinner
     var onLoadingChanged: ((Bool) -> Void)?
 
     // MARK: - State
-
-    private(set) var entries: [JournalEntry] = []
+    private var entries: [JournalEntry] = []
+    private(set) var displayEntries: [EntryDisplayModel] = []
 
     // MARK: - Dependencies
 
@@ -46,11 +44,15 @@ final class HomeViewModel: HomeViewModelProtocol {
         onNewEntry?()
     }
 
-    func editEntry(_ entry: JournalEntry) {
-        onEditEntry?(entry)
+    func selectEntry(at index: Int) {
+        guard entries.indices.contains(index) else { return }
+        onEditEntry?(entries[index])
     }
 
-    func deleteEntry(_ entry: JournalEntry) {
+    func deleteEntry(at index: Int) {
+        guard entries.indices.contains(index) else { return }
+        let entry = entries[index]
+
         journalService.deleteEntry(id: entry.id, for: uid) { [weak self] result in
             if case .failure = result {
                 self?.onError?("Não foi possível deletar a entrada.")
@@ -76,14 +78,28 @@ final class HomeViewModel: HomeViewModelProtocol {
         journalService.fetchEntries(for: uid) { [weak self] result in
             switch result {
             case .success(let entries):
-                self?.entries = entries
-                // Dados chegam ANTES do spinner parar
-                self?.onEntriesUpdated?(entries)
+                self?.entries        = entries
+                self?.displayEntries = entries.map { Self.map($0) }
+
+                self?.onEntriesUpdated?(self?.displayEntries ?? [])
                 self?.onLoadingChanged?(false)
+
             case .failure:
                 self?.onLoadingChanged?(false)
                 self?.onError?("Erro ao carregar entradas.")
             }
         }
+    }
+
+    // MARK: - Mapping
+
+    //mudar o visual da célula =
+    
+    private static func map(_ entry: JournalEntry) -> EntryDisplayModel {
+        return EntryDisplayModel(
+            title:    "\(entry.mood.emoji)  \(entry.title)",
+            subtitle: AppConstants.Formatters.entryDate.string(from: entry.createdAt),
+            accessory: entry.mood.emoji
+        )
     }
 }

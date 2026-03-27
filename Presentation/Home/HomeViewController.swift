@@ -7,9 +7,8 @@ final class HomeViewController: UIViewController {
 
     // MARK: - Properties
 
-    // Depende do protocolo, não da classe concreta
+    // ✅ D: depende do protocolo, nunca da classe concreta
     private let viewModel: HomeViewModelProtocol
-
     private let entryCellID = AppConstants.Strings.Cell.entryCell
 
     // MARK: - UI Components
@@ -17,8 +16,6 @@ final class HomeViewController: UIViewController {
     private lazy var tableView: UITableView = {
         let tv = UITableView()
         tv.rowHeight          = UITableView.automaticDimension
-        // ✅ estimatedRowHeight melhora a performance do scroll
-        // sem ele o iOS calcula todas as alturas antes de renderizar
         tv.estimatedRowHeight = 60
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
@@ -44,7 +41,6 @@ final class HomeViewController: UIViewController {
 
     // MARK: - Init
 
-    // Recebe o protocolo — qualquer conformante funciona aqui
     init(viewModel: HomeViewModelProtocol) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
@@ -107,7 +103,6 @@ final class HomeViewController: UIViewController {
     }
 
     private func bindViewModel() {
-
         viewModel.onLoadingChanged = { [weak self] isLoading in
             if isLoading {
                 self?.activityIndicator.startAnimating()
@@ -119,8 +114,8 @@ final class HomeViewController: UIViewController {
             }
         }
 
-        viewModel.onEntriesUpdated = { [weak self] entries in
-            self?.emptyLabel.isHidden = !entries.isEmpty
+        viewModel.onEntriesUpdated = { [weak self] _ in
+            self?.emptyLabel.isHidden = !(self?.viewModel.displayEntries.isEmpty ?? true)
             self?.tableView.reloadData()
         }
 
@@ -152,13 +147,13 @@ final class HomeViewController: UIViewController {
 }
 
 // MARK: - UITableViewDataSource
-// Conformidade isolada em extension — responsabilidade única de fornecer dados
+// ✅ I: conformidade isolada — responsabilidade única de fornecer dados
 
 extension HomeViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView,
                    numberOfRowsInSection section: Int) -> Int {
-        return viewModel.entries.count
+        return viewModel.displayEntries.count
     }
 
     func tableView(_ tableView: UITableView,
@@ -166,14 +161,15 @@ extension HomeViewController: UITableViewDataSource {
 
         let cell = tableView.dequeueReusableCell(withIdentifier: entryCellID, for: indexPath)
 
-        //Acesso seguro ao array — evita crash se entries mudar
-        guard indexPath.row < viewModel.entries.count else { return cell }
+        // ✅ Acesso seguro — sem crash se o array mudar durante renderização
+        guard indexPath.row < viewModel.displayEntries.count else { return cell }
 
-        let entry = viewModel.entries[indexPath.row]
+        // ✅ ViewController só lê strings prontas — não formata nada
+        let display = viewModel.displayEntries[indexPath.row]
 
         var content = cell.defaultContentConfiguration()
-        content.text          = "\(entry.mood.emoji)  \(entry.title)"
-        content.secondaryText = entry.body
+        content.text          = display.title    // "😊  Meu dia"
+        content.secondaryText = display.subtitle // "25 de mar. de 2026, 14:30"
 
         cell.contentConfiguration = content
         cell.accessoryType        = .disclosureIndicator
@@ -183,17 +179,15 @@ extension HomeViewController: UITableViewDataSource {
 }
 
 // MARK: - UITableViewDelegate
-// Conformidade isolada em extension — responsabilidade única de responder interações
+// ✅ I: conformidade isolada — responsabilidade única de responder interações
 
 extension HomeViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView,
                    didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-
-
-        guard indexPath.row < viewModel.entries.count else { return }
-        viewModel.editEntry(viewModel.entries[indexPath.row])
+        // ✅ Passa o índice — ViewController não conhece JournalEntry
+        viewModel.selectEntry(at: indexPath.row)
     }
 
     func tableView(_ tableView: UITableView,
@@ -201,9 +195,6 @@ extension HomeViewController: UITableViewDelegate {
                    forRowAt indexPath: IndexPath) {
 
         guard editingStyle == .delete else { return }
-
-        guard indexPath.row < viewModel.entries.count else { return }
-        let entry = viewModel.entries[indexPath.row]
 
         let alert = UIAlertController(
             title: "Deletar entrada",
@@ -213,7 +204,8 @@ extension HomeViewController: UITableViewDelegate {
 
         alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
         alert.addAction(UIAlertAction(title: "Deletar", style: .destructive) { [weak self] _ in
-            self?.viewModel.deleteEntry(entry)
+            // ✅ Passa o índice — ViewModel resolve o JournalEntry internamente
+            self?.viewModel.deleteEntry(at: indexPath.row)
         })
 
         present(alert, animated: true)

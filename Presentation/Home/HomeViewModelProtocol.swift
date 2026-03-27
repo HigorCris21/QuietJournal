@@ -5,21 +5,27 @@ import Foundation
 
 protocol HomeViewModelProtocol: AnyObject {
 
-    // Callbacks
-    var onEntriesUpdated: (([JournalEntry]) -> Void)? { get set }
-    var onError:          ((String) -> Void)?          { get set }
-    var onLogout:         (() -> Void)?                { get set }
-    var onNewEntry:       (() -> Void)?                { get set }
-    var onEditEntry:      ((JournalEntry) -> Void)?    { get set }
-    var onLoadingChanged: ((Bool) -> Void)?            { get set }
+    // MARK: - Callbacks
 
-    // State
-    var entries: [JournalEntry] { get }
+    var onEntriesUpdated: (([EntryDisplayModel]) -> Void)? { get set }
+    var onError:          ((String) -> Void)?              { get set }
+    var onLogout:         (() -> Void)?                    { get set }
+    var onNewEntry:       (() -> Void)?                    { get set }
+    var onEditEntry:      ((JournalEntry) -> Void)?        { get set }
+    var onLoadingChanged: ((Bool) -> Void)?                { get set }
 
-    // Actions
+    // MARK: - State
+
+    //ViewController acessa apenas o modelo de display — não o de domínio
+    var displayEntries: [EntryDisplayModel] { get }
+
+    // MARK: - Actions
+
     func viewDidLoad()
     func newEntryTapped()
-    func editEntry(_ entry: JournalEntry)
-    func deleteEntry(_ entry: JournalEntry)
+
+    // Ações por índice — ViewController não precisa conhecer JournalEntry
+    func selectEntry(at index: Int)
+    func deleteEntry(at index: Int)
     func logout()
 }
