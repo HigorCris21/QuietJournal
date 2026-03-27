@@ -26,17 +26,11 @@ final class LoginViewModel {
 
     func login(email: String, password: String) {
 
-        // Guarda 1 — campos vazios
-        // Verificação mais básica: nem tenta validar formato se estiver vazio
         guard !email.isEmpty, !password.isEmpty else {
             onError?("Preencha todos os campos.")
             return
         }
 
-        // ✅ ITEM 4 — Guarda 2 — formato do email
-        // Só chega aqui se os campos não estiverem vazios.
-        // Barra strings como "teste", "higor@@", "sem-arroba"
-        // antes de fazer qualquer chamada de rede.
         guard email.isValidEmail else {
             onError?("Digite um e-mail válido.")
             return
@@ -51,29 +45,15 @@ final class LoginViewModel {
             case .success:
                 self?.onLoginSuccess?()
 
-            case .failure(let error):
-                self?.onError?(self?.errorMessage(for: error) ?? AppConstants.Strings.Auth.errorUnknown)
+            case .failure(let error):                
+                let message = (error as? AuthError)?.localizedDescription
+                    ?? AppConstants.Strings.Auth.errorUnknown
+                self?.onError?(message)
             }
         }
     }
 
     func registerTapped() {
         onRegisterTapped?()
-    }
-
-    // MARK: - Private Helpers
-
-    private func errorMessage(for error: Error) -> String {
-        guard let authError = error as? AuthError else {
-            return AppConstants.Strings.Auth.errorUnknown
-        }
-
-        switch authError {
-        case .invalidCredentials: return AppConstants.Strings.Auth.errorInvalidCredentials
-        case .userNotFound:       return AppConstants.Strings.Auth.errorUserNotFound
-        case .emailAlreadyInUse:  return AppConstants.Strings.Auth.errorEmailInUse
-        case .networkError:       return AppConstants.Strings.Auth.errorNetwork
-        case .unknown:            return AppConstants.Strings.Auth.errorUnknown
-        }
     }
 }

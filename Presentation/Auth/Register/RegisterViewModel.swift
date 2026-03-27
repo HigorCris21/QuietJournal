@@ -26,25 +26,21 @@ final class RegisterViewModel {
 
     func register(email: String, password: String, confirmPassword: String) {
 
-        // Validação 1 — campos vazios
         guard !email.isEmpty, !password.isEmpty, !confirmPassword.isEmpty else {
             onError?("Preencha todos os campos.")
             return
         }
 
-        // ✅ ITEM 4 — Validação 2 — formato do email
         guard email.isValidEmail else {
             onError?("Digite um e-mail válido.")
             return
         }
 
-        // Validação 3 — senhas coincidem
         guard password == confirmPassword else {
             onError?("As senhas não coincidem.")
             return
         }
 
-        // Validação 4 — senha fraca
         guard password.count >= 6 else {
             onError?("A senha deve ter pelo menos 6 caracteres.")
             return
@@ -60,28 +56,14 @@ final class RegisterViewModel {
                 self?.onRegisterSuccess?()
 
             case .failure(let error):
-                self?.onError?(self?.errorMessage(for: error) ?? AppConstants.Strings.Auth.errorUnknown)
+                let message = (error as? AuthError)?.localizedDescription
+                    ?? AppConstants.Strings.Auth.errorUnknown
+                self?.onError?(message)
             }
         }
     }
 
     func backTapped() {
         onBackTapped?()
-    }
-
-    // MARK: - Private Helpers
-
-    private func errorMessage(for error: Error) -> String {
-        guard let authError = error as? AuthError else {
-            return AppConstants.Strings.Auth.errorUnknown
-        }
-
-        switch authError {
-        case .invalidCredentials: return AppConstants.Strings.Auth.errorInvalidCredentials
-        case .userNotFound:       return AppConstants.Strings.Auth.errorUserNotFound
-        case .emailAlreadyInUse:  return AppConstants.Strings.Auth.errorEmailInUse
-        case .networkError:       return AppConstants.Strings.Auth.errorNetwork
-        case .unknown:            return AppConstants.Strings.Auth.errorUnknown
-        }
     }
 }
