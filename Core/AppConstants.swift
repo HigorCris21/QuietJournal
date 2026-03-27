@@ -17,9 +17,32 @@ enum AppConstants {
     // MARK: - Colors
 
     enum Colors {
-        static let primary    = UIColor(named: "AccentColor")
-        static let background = UIColor(named: "BackgroundColor")
-        static let text       = UIColor(named: "TextColor")
+
+        // Cores retornam UIColor (não-opcional) com fatalError explicativo.
+        static let primary: UIColor = UIColor(named: "AccentColor") ?? {
+            fatalError("AppConstants.Colors: 'AccentColor' não encontrado no Assets.xcassets")
+        }()
+
+        static let background: UIColor = UIColor(named: "BackgroundColor") ?? {
+            fatalError("AppConstants.Colors: 'BackgroundColor' não encontrado no Assets.xcassets")
+        }()
+
+        static let text: UIColor = UIColor(named: "TextColor") ?? {
+            fatalError("AppConstants.Colors: 'TextColor' não encontrado no Assets.xcassets")
+        }()
+    }
+
+    // MARK: - Formatters
+
+    enum Formatters {
+
+        static let entryDate: DateFormatter = {
+            let df = DateFormatter()
+            df.dateStyle = .medium  // ex: 25 de mar. de 2026
+            df.timeStyle = .short   // ex: 14:30
+            df.locale    = Locale(identifier: "pt_BR")
+            return df
+        }()
     }
 
     // MARK: - Strings — Auth
@@ -41,6 +64,11 @@ enum AppConstants {
             static let newEntryTitle  = "Nova entrada"
             static let editEntryTitle = "Editar entrada"
             static let deleteConfirm  = "Deseja deletar esta entrada?"
+        }
+
+        enum Cell {
+            // Identificador da célula centralizado — uma string, um lugar.
+            static let entryCell = "EntryCell"
         }
     }
 }
