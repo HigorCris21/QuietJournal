@@ -9,7 +9,6 @@ import UIKit
 protocol Coordinator: AnyObject {
 
     // Cada Coordinator gerencia seus filhos
-    // evita que sejam desalocados da memória prematuramente
     var childCoordinators: [Coordinator] { get set }
 
     // Ponto de entrada — inicia o fluxo de navegação

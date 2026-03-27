@@ -22,7 +22,7 @@ final class EntryViewController: UIViewController {
 
     private lazy var bodyTextView: UITextView = {
         let tv = UITextView()
-        tv.font        = UIFont.systemFont(ofSize: 16)
+        tv.font               = UIFont.systemFont(ofSize: 16)
         tv.layer.borderColor  = UIColor.systemGray4.cgColor
         tv.layer.borderWidth  = 1
         tv.layer.cornerRadius = 8
@@ -31,7 +31,6 @@ final class EntryViewController: UIViewController {
     }()
 
     private lazy var moodSegmentedControl: UISegmentedControl = {
-        // Usa CaseIterable para gerar os segmentos automaticamente
         let items = Mood.allCases.map { "\($0.emoji) \($0.label)" }
         let sc    = UISegmentedControl(items: items)
         sc.selectedSegmentIndex = 0
@@ -72,12 +71,16 @@ final class EntryViewController: UIViewController {
         setupNavigationBar()
         bindViewModel()
         populateFields()
+        setupKeyboardObservers()
     }
 
     // MARK: - Setup
 
     private func setupUI() {
         view.backgroundColor = AppConstants.Colors.background
+
+        // D: depende do protocolo UITextViewDelegate, não de classe concreta
+        bodyTextView.delegate = self
 
         view.addSubview(titleField)
         view.addSubview(moodLabel)
@@ -109,7 +112,6 @@ final class EntryViewController: UIViewController {
     }
 
     private func setupNavigationBar() {
-        // Título muda conforme o modo
         title = viewModel.isEditing
             ? AppConstants.Strings.Journal.editEntryTitle
             : AppConstants.Strings.Journal.newEntryTitle
@@ -129,12 +131,17 @@ final class EntryViewController: UIViewController {
         )
     }
 
-    // Preenche os campos se for edição
     private func populateFields() {
         titleField.text = viewModel.initialTitle
-        bodyTextView.text = viewModel.initialBody
 
-        // Encontra o índice do mood atual no CaseIterable
+        if viewModel.initialBody.isEmpty {
+            // Responsabilidade delegada à extensão — ViewController não sabe "como"
+            bodyTextView.showPlaceholder(AppConstants.Strings.Journal.bodyPlaceholder)
+        } else {
+            bodyTextView.text      = viewModel.initialBody
+            bodyTextView.textColor = AppConstants.Colors.text
+        }
+
         if let index = Mood.allCases.firstIndex(of: viewModel.initialMood) {
             moodSegmentedControl.selectedSegmentIndex = index
         }
@@ -154,20 +161,74 @@ final class EntryViewController: UIViewController {
         }
     }
 
+    // MARK: - Keyboard
+
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow(_:)),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let keyboardFrame = info[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+        else { return }
+
+        let inset = UIEdgeInsets(top: 0, left: 0, bottom: keyboardFrame.height, right: 0)
+        bodyTextView.contentInset          = inset
+        bodyTextView.scrollIndicatorInsets = inset
+    }
+
+    @objc private func keyboardWillHide() {
+        bodyTextView.contentInset          = .zero
+        bodyTextView.scrollIndicatorInsets = .zero
+    }
+
     // MARK: - Actions
 
     @objc private func saveTapped() {
-        // Converte o índice selecionado de volta para Mood
-        let selectedMood = Mood.allCases[moodSegmentedControl.selectedSegmentIndex]
+        let index        = moodSegmentedControl.selectedSegmentIndex
+        let selectedMood = Mood.allCases.indices.contains(index)
+            ? Mood.allCases[index]
+            : .neutral
+
+        // isShowingPlaceholder vive na extensão — não na ViewController
+        let bodyText = bodyTextView.isShowingPlaceholder ? "" : bodyTextView.text
 
         viewModel.save(
             title: titleField.text ?? "",
-            body:  bodyTextView.text ?? "",
+            body:  bodyText ?? "",
             mood:  selectedMood
         )
     }
 
     @objc private func cancelTapped() {
         viewModel.cancel()
+    }
+}
+
+// MARK: - UITextViewDelegate
+
+extension EntryViewController: UITextViewDelegate {
+
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        if textView.isShowingPlaceholder {
+            textView.hidePlaceholder(textColor: AppConstants.Colors.text)
+        }
+    }
+
+    func textViewDidEndEditing(_ textView: UITextView) {
+        if textView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            textView.showPlaceholder(AppConstants.Strings.Journal.bodyPlaceholder)
+        }
     }
 }

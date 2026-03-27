@@ -64,6 +64,7 @@ enum AppConstants {
             static let newEntryTitle  = "Nova entrada"
             static let editEntryTitle = "Editar entrada"
             static let deleteConfirm  = "Deseja deletar esta entrada?"
+            static let bodyPlaceholder = "Escreva sua entrada aqui..."
         }
 
         enum Cell {
