@@ -7,17 +7,19 @@ final class HomeViewController: UIViewController {
 
     // MARK: - Properties
 
-    private let viewModel: HomeViewModel
+    // Depende do protocolo, não da classe concreta
+    private let viewModel: HomeViewModelProtocol
 
-    // Identificador da célula centralizado — uma string, um lugar.
-
-    private let entryCellID = "EntryCell"
+    private let entryCellID = AppConstants.Strings.Cell.entryCell
 
     // MARK: - UI Components
 
     private lazy var tableView: UITableView = {
         let tv = UITableView()
-        tv.rowHeight = UITableView.automaticDimension
+        tv.rowHeight          = UITableView.automaticDimension
+        // ✅ estimatedRowHeight melhora a performance do scroll
+        // sem ele o iOS calcula todas as alturas antes de renderizar
+        tv.estimatedRowHeight = 60
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
     }()
@@ -33,9 +35,17 @@ final class HomeViewController: UIViewController {
         return lbl
     }()
 
+    private lazy var activityIndicator: UIActivityIndicatorView = {
+        let ai = UIActivityIndicatorView(style: .large)
+        ai.hidesWhenStopped = true
+        ai.translatesAutoresizingMaskIntoConstraints = false
+        return ai
+    }()
+
     // MARK: - Init
 
-    init(viewModel: HomeViewModel) {
+    // Recebe o protocolo — qualquer conformante funciona aqui
+    init(viewModel: HomeViewModelProtocol) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
@@ -58,14 +68,11 @@ final class HomeViewController: UIViewController {
         view.backgroundColor = AppConstants.Colors.background
         view.addSubview(tableView)
         view.addSubview(emptyLabel)
+        view.addSubview(activityIndicator)
 
-        tableView.dataSource = self
-        tableView.delegate   = self
-
-        //Registra a classe da célula para o identificador.
+        tableView.dataSource      = self
+        tableView.delegate        = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: entryCellID)
-
-       //Remove as linhas separadoras fantasmas
         tableView.tableFooterView = UIView()
 
         NSLayoutConstraint.activate([
@@ -75,7 +82,10 @@ final class HomeViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
             emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            emptyLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            emptyLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
     }
 
@@ -97,6 +107,18 @@ final class HomeViewController: UIViewController {
     }
 
     private func bindViewModel() {
+
+        viewModel.onLoadingChanged = { [weak self] isLoading in
+            if isLoading {
+                self?.activityIndicator.startAnimating()
+                self?.tableView.isHidden  = true
+                self?.emptyLabel.isHidden = true
+            } else {
+                self?.activityIndicator.stopAnimating()
+                self?.tableView.isHidden = false
+            }
+        }
+
         viewModel.onEntriesUpdated = { [weak self] entries in
             self?.emptyLabel.isHidden = !entries.isEmpty
             self?.tableView.reloadData()
@@ -130,21 +152,25 @@ final class HomeViewController: UIViewController {
 }
 
 // MARK: - UITableViewDataSource
+// Conformidade isolada em extension — responsabilidade única de fornecer dados
 
 extension HomeViewController: UITableViewDataSource {
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView,
+                   numberOfRowsInSection section: Int) -> Int {
         return viewModel.entries.count
     }
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        // dequeueReusableCell reutiliza células do pool interno
         let cell = tableView.dequeueReusableCell(withIdentifier: entryCellID, for: indexPath)
+
+        //Acesso seguro ao array — evita crash se entries mudar
+        guard indexPath.row < viewModel.entries.count else { return cell }
 
         let entry = viewModel.entries[indexPath.row]
 
-        // defaultContentConfiguration() substitui textLabel/detailTextLabel,
         var content = cell.defaultContentConfiguration()
         content.text          = "\(entry.mood.emoji)  \(entry.title)"
         content.secondaryText = entry.body
@@ -157,11 +183,16 @@ extension HomeViewController: UITableViewDataSource {
 }
 
 // MARK: - UITableViewDelegate
+// Conformidade isolada em extension — responsabilidade única de responder interações
 
 extension HomeViewController: UITableViewDelegate {
 
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    func tableView(_ tableView: UITableView,
+                   didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+
+
+        guard indexPath.row < viewModel.entries.count else { return }
         viewModel.editEntry(viewModel.entries[indexPath.row])
     }
 
@@ -171,7 +202,7 @@ extension HomeViewController: UITableViewDelegate {
 
         guard editingStyle == .delete else { return }
 
-        // Captura a entry ANTES de mostrar o alerta.
+        guard indexPath.row < viewModel.entries.count else { return }
         let entry = viewModel.entries[indexPath.row]
 
         let alert = UIAlertController(
@@ -181,7 +212,6 @@ extension HomeViewController: UITableViewDelegate {
         )
 
         alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
-
         alert.addAction(UIAlertAction(title: "Deletar", style: .destructive) { [weak self] _ in
             self?.viewModel.deleteEntry(entry)
         })

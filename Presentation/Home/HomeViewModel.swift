@@ -3,7 +3,7 @@
 
 import Foundation
 
-final class HomeViewModel {
+final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Callbacks
 
@@ -13,6 +13,9 @@ final class HomeViewModel {
     var onNewEntry:       (() -> Void)?
     var onEditEntry:      ((JournalEntry) -> Void)?
 
+    // Callback que avisa a ViewController para ligar/desligar o spinner
+    var onLoadingChanged: ((Bool) -> Void)?
+
     // MARK: - State
 
     private(set) var entries: [JournalEntry] = []
@@ -20,15 +23,11 @@ final class HomeViewModel {
     // MARK: - Dependencies
 
     private let journalService: JournalServiceProtocol
+    private let authService:    AuthServiceProtocol
     private let uid:            String
-
-   //authService entra como dependência.
-    private let authService: AuthServiceProtocol
 
     // MARK: - Init
 
-    //AuthService agora faz parte do contrato do init.
-   
     init(journalService: JournalServiceProtocol,
          authService:    AuthServiceProtocol,
          uid:            String) {
@@ -59,16 +58,12 @@ final class HomeViewModel {
         }
     }
 
-    // Logout agora executa as 3 etapas na ordem correta:
-    //
-   
     func logout() {
         do {
-            try authService.logout()        // 1. Firebase encerra sessão
-            journalService.stopListening()  // 2. Listener do Firestore encerrado
-            onLogout?()                     // 3. Coordinator troca a tela
+            try authService.logout()
+            journalService.stopListening()
+            onLogout?()
         } catch {
-            // Se o Firebase retornar erro no logout (raro, mas possível em falha de rede),
             onError?("Não foi possível encerrar a sessão. Tente novamente.")
         }
     }
@@ -76,12 +71,17 @@ final class HomeViewModel {
     // MARK: - Private
 
     private func fetchEntries() {
+        onLoadingChanged?(true)
+
         journalService.fetchEntries(for: uid) { [weak self] result in
             switch result {
             case .success(let entries):
                 self?.entries = entries
+                // Dados chegam ANTES do spinner parar
                 self?.onEntriesUpdated?(entries)
+                self?.onLoadingChanged?(false)
             case .failure:
+                self?.onLoadingChanged?(false)
                 self?.onError?("Erro ao carregar entradas.")
             }
         }
