@@ -14,14 +14,20 @@ final class JournalService: JournalServiceProtocol {
         return db.collection("users").document(uid).collection("entries")
     }
 
-    // MARK: - Fetch
+    // MARK: - Listener
 
     private var listener: ListenerRegistration?
+    
+    deinit {
+        listener?.remove()
+    }
+
+    // MARK: - Fetch
 
     func fetchEntries(for uid: String,
                       completion: @escaping (Result<[JournalEntry], Error>) -> Void) {
 
-        // Cancela listener anterior se existir
+        // Cancela listener anterior se existir antes de criar um novo
         listener?.remove()
 
         listener = entriesCollection(for: uid)
@@ -41,8 +47,7 @@ final class JournalService: JournalServiceProtocol {
                     let entries = documents.compactMap { doc -> JournalEntry? in
                         var data = doc.data()
 
-                        // Converte Timestamp → Date aqui na camada Data
-                        // O Domain (JournalEntry) não conhece Timestamp
+                        // Converte Timestamp → Date aqui na camada Data.
                         if let ts = data["createdAt"] as? Timestamp {
                             data["createdAt"] = ts.dateValue()
                         }
@@ -52,16 +57,16 @@ final class JournalService: JournalServiceProtocol {
 
                         return JournalEntry.fromFirestore(id: doc.documentID, data: data)
                     }
-                    
-                    
 
                     completion(.success(entries))
                 }
             }
     }
-    
-    //MARK: - Stop Listening
-    
+
+    // MARK: - Stop Listening
+
+    // Chamado explicitamente no logout (via HomeViewModel).
+    // O deinit acima é a garantia extra caso esse método não seja chamado.
     func stopListening() {
         listener?.remove()
         listener = nil

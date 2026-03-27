@@ -1,9 +1,5 @@
-//
-//  AppCoordinator.swift
-//  QuietJournal
-//
-//  Created by Higor  Lo Castro on 10/03/26.
-//
+// Application/AppCoordinator.swift
+// QuietJournal — Application
 
 import UIKit
 
@@ -17,13 +13,13 @@ final class AppCoordinator: Coordinator {
     private let navigationController: UINavigationController
 
     // Protocolos — nunca as implementações concretas
-    private let authService: AuthServiceProtocol
+    private let authService:    AuthServiceProtocol
     private let journalService: JournalServiceProtocol
 
     // MARK: - Init
 
     init(window: UIWindow,
-         authService: AuthServiceProtocol,
+         authService:    AuthServiceProtocol,
          journalService: JournalServiceProtocol) {
 
         self.window               = window
@@ -53,7 +49,6 @@ final class AppCoordinator: Coordinator {
             authService: authService
         )
 
-        // Quando o login for concluído, AuthCoordinator avisa o AppCoordinator
         authCoordinator.onAuthCompleted = { [weak self] in
             self?.removeChild(authCoordinator)
             self?.showHome()
@@ -69,13 +64,14 @@ final class AppCoordinator: Coordinator {
             return
         }
 
+        // AuthService agora é passado para HomeCoordinator.
         let homeCoordinator = HomeCoordinator(
             navigationController: navigationController,
-            journalService: journalService,
-            uid: uid
+            journalService:       journalService,
+            authService:          authService,   // ← linha que faltava
+            uid:                  uid
         )
 
-        // Quando o logout for executado, HomeCoordinator avisa o AppCoordinator
         homeCoordinator.onLogout = { [weak self] in
             self?.removeChild(homeCoordinator)
             self?.showAuth()
@@ -83,5 +79,5 @@ final class AppCoordinator: Coordinator {
 
         addChild(homeCoordinator)
         homeCoordinator.start()
-    }
+    } 
 }

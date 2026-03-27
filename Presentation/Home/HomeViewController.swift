@@ -9,6 +9,10 @@ final class HomeViewController: UIViewController {
 
     private let viewModel: HomeViewModel
 
+    // Identificador da célula centralizado — uma string, um lugar.
+
+    private let entryCellID = "EntryCell"
+
     // MARK: - UI Components
 
     private lazy var tableView: UITableView = {
@@ -57,6 +61,12 @@ final class HomeViewController: UIViewController {
 
         tableView.dataSource = self
         tableView.delegate   = self
+
+        //Registra a classe da célula para o identificador.
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: entryCellID)
+
+       //Remove as linhas separadoras fantasmas
+        tableView.tableFooterView = UIView()
 
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -128,12 +138,19 @@ extension HomeViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "EntryCell")
+
+        // dequeueReusableCell reutiliza células do pool interno
+        let cell = tableView.dequeueReusableCell(withIdentifier: entryCellID, for: indexPath)
+
         let entry = viewModel.entries[indexPath.row]
 
-        cell.textLabel?.text       = "\(entry.mood.emoji)  \(entry.title)"
-        cell.detailTextLabel?.text = entry.body
-        cell.accessoryType         = .disclosureIndicator
+        // defaultContentConfiguration() substitui textLabel/detailTextLabel,
+        var content = cell.defaultContentConfiguration()
+        content.text          = "\(entry.mood.emoji)  \(entry.title)"
+        content.secondaryText = entry.body
+
+        cell.contentConfiguration = content
+        cell.accessoryType        = .disclosureIndicator
 
         return cell
     }
@@ -148,7 +165,6 @@ extension HomeViewController: UITableViewDelegate {
         viewModel.editEntry(viewModel.entries[indexPath.row])
     }
 
-    // ✅ ITEM 3 — Confirmação antes de deletar
     func tableView(_ tableView: UITableView,
                    commit editingStyle: UITableViewCell.EditingStyle,
                    forRowAt indexPath: IndexPath) {
@@ -156,9 +172,6 @@ extension HomeViewController: UITableViewDelegate {
         guard editingStyle == .delete else { return }
 
         // Captura a entry ANTES de mostrar o alerta.
-        // Se o listener do Firestore atualizar a lista enquanto o alerta
-        // está aberto, o indexPath pode ficar desatualizado. Guardar a
-        // entry por referência garante que deletamos a coisa certa.
         let entry = viewModel.entries[indexPath.row]
 
         let alert = UIAlertController(

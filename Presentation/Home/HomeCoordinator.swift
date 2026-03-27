@@ -12,16 +12,23 @@ final class HomeCoordinator: Coordinator {
     private let journalService: JournalServiceProtocol
     private let uid: String
 
+    // AuthService entra como propriedade do Coordinator.
+
+    private let authService: AuthServiceProtocol
+
     // Callback para avisar o AppCoordinator que o logout foi executado
     var onLogout: (() -> Void)?
 
     // MARK: - Init
 
+    // AuthService entra no init.
     init(navigationController: UINavigationController,
-         journalService: JournalServiceProtocol,
-         uid: String) {
+         journalService:       JournalServiceProtocol,
+         authService:          AuthServiceProtocol,
+         uid:                  String) {
         self.navigationController = navigationController
         self.journalService       = journalService
+        self.authService          = authService
         self.uid                  = uid
     }
 
@@ -34,9 +41,15 @@ final class HomeCoordinator: Coordinator {
     // MARK: - Flows
 
     private func showHome() {
-        let viewModel        = HomeViewModel(journalService: journalService, uid: uid)
-        viewModel.onLogout   = { [weak self] in self?.onLogout?() }
-        viewModel.onNewEntry = { [weak self] in self?.showNewEntry() }
+        // AuthService agora é repassado para HomeViewModel.
+        let viewModel = HomeViewModel(
+            journalService: journalService,
+            authService:    authService,
+            uid:            uid
+        )
+
+        viewModel.onLogout    = { [weak self] in self?.onLogout?() }
+        viewModel.onNewEntry  = { [weak self] in self?.showNewEntry() }
         viewModel.onEditEntry = { [weak self] entry in self?.showEditEntry(entry) }
 
         let vc = HomeViewController(viewModel: viewModel)
@@ -45,7 +58,7 @@ final class HomeCoordinator: Coordinator {
 
     private func showNewEntry() {
         let viewModel = EntryViewModel(journalService: journalService, uid: uid, entry: nil)
-        viewModel.onSaved    = { [weak self] in self?.navigationController.popViewController(animated: true) }
+        viewModel.onSaved     = { [weak self] in self?.navigationController.popViewController(animated: true) }
         viewModel.onCancelled = { [weak self] in self?.navigationController.popViewController(animated: true) }
 
         let vc = EntryViewController(viewModel: viewModel)

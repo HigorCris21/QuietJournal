@@ -20,12 +20,20 @@ final class HomeViewModel {
     // MARK: - Dependencies
 
     private let journalService: JournalServiceProtocol
-    private let uid: String
+    private let uid:            String
+
+   //authService entra como dependência.
+    private let authService: AuthServiceProtocol
 
     // MARK: - Init
 
-    init(journalService: JournalServiceProtocol, uid: String) {
+    //AuthService agora faz parte do contrato do init.
+   
+    init(journalService: JournalServiceProtocol,
+         authService:    AuthServiceProtocol,
+         uid:            String) {
         self.journalService = journalService
+        self.authService    = authService
         self.uid            = uid
     }
 
@@ -51,9 +59,18 @@ final class HomeViewModel {
         }
     }
 
+    // Logout agora executa as 3 etapas na ordem correta:
+    //
+   
     func logout() {
-        journalService.stopListening()
-        onLogout?()
+        do {
+            try authService.logout()        // 1. Firebase encerra sessão
+            journalService.stopListening()  // 2. Listener do Firestore encerrado
+            onLogout?()                     // 3. Coordinator troca a tela
+        } catch {
+            // Se o Firebase retornar erro no logout (raro, mas possível em falha de rede),
+            onError?("Não foi possível encerrar a sessão. Tente novamente.")
+        }
     }
 
     // MARK: - Private
