@@ -1,9 +1,6 @@
-//
-//  AppDelegate.swift
-//  QuietJournal
-//
-//  Created by Higor  Lo Castro on 05/03/26.
-//
+// Application/AppDelegate.swift
+// QuietJournal — Application
+
 import UIKit
 import FirebaseCore
 
@@ -18,10 +15,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         FirebaseApp.configure()
 
-        // Cria a janela principal do app
-        window = UIWindow(frame: UIScreen.main.bounds)
+        // UIWindow criada a partir da cena ativa
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+            return true
+        }
 
-        // Injeta os serviços no AppCoordinator
+        window = UIWindow(windowScene: scene)
+
         let authService    = AuthService()
         let journalService = JournalService()
 
