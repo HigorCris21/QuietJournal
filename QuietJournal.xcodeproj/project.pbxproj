@@ -94,6 +94,11 @@
 			path = Domain;
 			sourceTree = "<group>";
 		};
+		EBB320482F787DC8004D1B44 /* Mocks */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Mocks;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +132,7 @@
 		EB771EC72F5A1D1100C2B7E5 = {
 			isa = PBXGroup;
 			children = (
+				EBB320482F787DC8004D1B44 /* Mocks */,
 				EB771F1E2F5A22DF00C2B7E5 /* Domain */,
 				EB771F1A2F5A229D00C2B7E5 /* Resources */,
 				EB771F192F5A229400C2B7E5 /* Presentation */,
@@ -181,6 +187,7 @@
 				EB771F192F5A229400C2B7E5 /* Presentation */,
 				EB771F1A2F5A229D00C2B7E5 /* Resources */,
 				EB771F1E2F5A22DF00C2B7E5 /* Domain */,
+				EBB320482F787DC8004D1B44 /* Mocks */,
 			);
 			name = QuietJournal;
 			packageProductDependencies = (

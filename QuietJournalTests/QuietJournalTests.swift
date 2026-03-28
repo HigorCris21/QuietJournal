@@ -1,36 +1,107 @@
-//
-//  QuietJournalTests.swift
-//  QuietJournalTests
-//
-//  Created by Higor  Lo Castro on 05/03/26.
-//
+// QuietJournalTests/LoginViewModelTests.swift
 
 import XCTest
 @testable import QuietJournal
 
-final class QuietJournalTests: XCTestCase {
+final class LoginViewModelTests: XCTestCase {
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    // MARK: - Setup
+
+    private var authService: MockAuthService!
+    private var sut: LoginViewModel!   // sut = System Under Test — convenção de testes
+
+    override func setUp() {
+        super.setUp()
+        authService = MockAuthService()
+        sut         = LoginViewModel(authService: authService)
     }
 
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    override func tearDown() {
+        authService = nil
+        sut         = nil
+        super.tearDown()
     }
 
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
+    // MARK: - Campos vazios
+
+    func test_login_emailVazio_deveDispararErro() {
+        // Arrange
+        var errorMessage: String?
+        sut.onError = { errorMessage = $0 }
+
+        // Act
+        sut.login(email: "", password: "123456")
+
+        // Assert
+        XCTAssertEqual(errorMessage, "Preencha todos os campos.")
+        XCTAssertFalse(authService.loginCalled) // serviço NÃO deve ser chamado
     }
 
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
+    func test_login_senhaVazia_deveDispararErro() {
+        var errorMessage: String?
+        sut.onError = { errorMessage = $0 }
+
+        sut.login(email: "email@teste.com", password: "")
+
+        XCTAssertEqual(errorMessage, "Preencha todos os campos.")
+        XCTAssertFalse(authService.loginCalled)
     }
 
+    // MARK: - Email inválido
+
+    func test_login_emailInvalido_deveDispararErro() {
+        var errorMessage: String?
+        sut.onError = { errorMessage = $0 }
+
+        sut.login(email: "emailsemarroba", password: "123456")
+
+        XCTAssertEqual(errorMessage, "Digite um e-mail válido.")
+        XCTAssertFalse(authService.loginCalled)
+    }
+
+    // MARK: - Sucesso
+
+    func test_login_credenciaisValidas_deveDispararOnLoginSuccess() {
+        // Arrange
+        authService.loginResult = .success("uid-real")
+        var successCalled = false
+        sut.onLoginSuccess = { successCalled = true }
+
+        // Act
+        sut.login(email: "email@teste.com", password: "123456")
+
+        // Assert
+        XCTAssertTrue(successCalled)
+        XCTAssertTrue(authService.loginCalled)
+    }
+
+    // MARK: - Falha do serviço
+
+    func test_login_credenciaisInvalidas_deveDispararErroCorreto() {
+        // Arrange — serviço vai retornar credenciais inválidas
+        authService.loginResult = .failure(AuthError.invalidCredentials)
+        var errorMessage: String?
+        sut.onError = { errorMessage = $0 }
+
+        // Act
+        sut.login(email: "email@teste.com", password: "senhaerrada")
+
+        // Assert — mensagem vem do AuthError.localizedDescription
+        XCTAssertEqual(errorMessage, AppConstants.Strings.Auth.errorInvalidCredentials)
+    }
+
+    // MARK: - Loading
+
+    func test_login_deveDispararLoadingTrue_antesDeAutenticar() {
+        // Arrange
+        var loadingStates: [Bool] = []
+        sut.onLoadingChanged = { loadingStates.append($0) }
+
+        // Act
+        sut.login(email: "email@teste.com", password: "123456")
+
+        // Assert — primeiro estado deve ser true (loading ligou), depois false
+        XCTAssertEqual(loadingStates.first, true)
+        XCTAssertEqual(loadingStates.last,  false)
+    }
 }
