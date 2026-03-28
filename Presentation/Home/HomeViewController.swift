@@ -6,10 +6,8 @@ import UIKit
 final class HomeViewController: UIViewController {
 
     // MARK: - Properties
-
-    // ✅ D: depende do protocolo, nunca da classe concreta
+    
     private let viewModel: HomeViewModelProtocol
-    private let entryCellID = AppConstants.Strings.Cell.entryCell
 
     // MARK: - UI Components
 
@@ -68,7 +66,7 @@ final class HomeViewController: UIViewController {
 
         tableView.dataSource      = self
         tableView.delegate        = self
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: entryCellID)
+        tableView.register(EntryCell.self, forCellReuseIdentifier: EntryCell.reuseIdentifier)
         tableView.tableFooterView = UIView()
 
         NSLayoutConstraint.activate([
@@ -147,7 +145,6 @@ final class HomeViewController: UIViewController {
 }
 
 // MARK: - UITableViewDataSource
-// ✅ I: conformidade isolada — responsabilidade única de fornecer dados
 
 extension HomeViewController: UITableViewDataSource {
 
@@ -159,34 +156,28 @@ extension HomeViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView,
                    cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        let cell = tableView.dequeueReusableCell(withIdentifier: entryCellID, for: indexPath)
+        guard indexPath.row < viewModel.displayEntries.count else {
+            return UITableViewCell()
+        }
 
-        // ✅ Acesso seguro — sem crash se o array mudar durante renderização
-        guard indexPath.row < viewModel.displayEntries.count else { return cell }
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: EntryCell.reuseIdentifier,
+            for: indexPath
+        ) as! EntryCell
 
-        // ✅ ViewController só lê strings prontas — não formata nada
-        let display = viewModel.displayEntries[indexPath.row]
-
-        var content = cell.defaultContentConfiguration()
-        content.text          = display.title    // "😊  Meu dia"
-        content.secondaryText = display.subtitle // "25 de mar. de 2026, 14:30"
-
-        cell.contentConfiguration = content
-        cell.accessoryType        = .disclosureIndicator
-
+        cell.configure(with: viewModel.displayEntries[indexPath.row])
         return cell
     }
 }
 
 // MARK: - UITableViewDelegate
-// ✅ I: conformidade isolada — responsabilidade única de responder interações
 
 extension HomeViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView,
                    didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        // ✅ Passa o índice — ViewController não conhece JournalEntry
+        // Passa o índice
         viewModel.selectEntry(at: indexPath.row)
     }
 
@@ -204,7 +195,7 @@ extension HomeViewController: UITableViewDelegate {
 
         alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
         alert.addAction(UIAlertAction(title: "Deletar", style: .destructive) { [weak self] _ in
-            // ✅ Passa o índice — ViewModel resolve o JournalEntry internamente
+            // Passa o índice
             self?.viewModel.deleteEntry(at: indexPath.row)
         })
 

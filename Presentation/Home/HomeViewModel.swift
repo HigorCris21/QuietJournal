@@ -93,13 +93,20 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Mapping
 
-    //mudar o visual da célula =
-    
+    //mudao visual da célula
     private static func map(_ entry: JournalEntry) -> EntryDisplayModel {
+
+        // Preview: primeiros 80 caracteres, sem quebras de linha
+        let preview = entry.body
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .prefix(80)
+            .replacingOccurrences(of: "\n", with: " ")
+
         return EntryDisplayModel(
-            title:    "\(entry.mood.emoji)  \(entry.title)",
-            subtitle: AppConstants.Formatters.entryDate.string(from: entry.createdAt),
-            accessory: entry.mood.emoji
+            title:   entry.title,
+            bodyPreview: preview.isEmpty ? "Sem conteúdo" : String(preview),
+            subtitle:    AppConstants.Formatters.entryDate.string(from: entry.createdAt),
+            accessory:   entry.mood.emoji
         )
     }
 }

@@ -4,7 +4,8 @@
 import Foundation
 
 struct EntryDisplayModel {
-    let title:     String   // emoji + título já combinados
-    let subtitle:  String   // data formatada
-    let accessory: String   // emoji do humor (para acessibilidade futura)
+    let title:       String   // título da entrada
+    let bodyPreview: String   // primeiros ~80 chars do body
+    let subtitle:    String   // data formatada
+    let accessory:   String   // emoji puro do humor
 }
