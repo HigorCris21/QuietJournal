@@ -3,6 +3,7 @@
 
 import Foundation
 
+@MainActor
 final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Callbacks
@@ -50,19 +51,23 @@ final class HomeViewModel: HomeViewModelProtocol {
         onEditEntry?(entries[index])
     }
 
+    // 🔥 REFATORADO PARA ASYNC/AWAIT
     func deleteEntry(at index: Int) {
         guard entries.indices.contains(index) else { return }
 
         let entry = entries[index]
 
-        journalService.deleteEntry(id: entry.id, for: uid) { [weak self] result in
-            switch result {
-            case .success:
-                break // listener já atualiza lista automaticamente
+        Task {
+            onLoadingChanged?(true)
 
-            case .failure:
-                self?.onError?("Não foi possível deletar a entrada.")
+            do {
+                try await journalService.deleteEntry(id: entry.id, for: uid)
+                // Não atualiza lista manualmente → Firestore listener faz isso
+            } catch {
+                onError?("Não foi possível deletar a entrada.")
             }
+
+            onLoadingChanged?(false)
         }
     }
 

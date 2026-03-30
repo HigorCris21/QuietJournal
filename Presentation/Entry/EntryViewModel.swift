@@ -41,7 +41,6 @@ final class EntryViewModel {
 
     func save(title: String, body: String, mood: Mood) {
 
-        // Validação — título obrigatório
         guard !title.trimmingCharacters(in: .whitespaces).isEmpty else {
             onError?("O título não pode estar vazio.")
             return
@@ -49,10 +48,21 @@ final class EntryViewModel {
 
         onLoadingChanged?(true)
 
-        if let existing = existingEntry {
-            update(existing: existing, title: title, body: body, mood: mood)
-        } else {
-            create(title: title, body: body, mood: mood)
+        Task {
+            do {
+                if let existing = existingEntry {
+                    try await update(existing: existing, title: title, body: body, mood: mood)
+                } else {
+                    try await create(title: title, body: body, mood: mood)
+                }
+
+                onLoadingChanged?(false)
+                onSaved?()
+
+            } catch {
+                onLoadingChanged?(false)
+                onError?("Não foi possível salvar a entrada.")
+            }
         }
     }
 
@@ -62,41 +72,34 @@ final class EntryViewModel {
 
     // MARK: - Private
 
-    private func create(title: String, body: String, mood: Mood) {
-        let now   = Date()
+    private func create(title: String, body: String, mood: Mood) async throws {
+
+        let now = Date()
+
         let entry = JournalEntry(
-            id:        UUID().uuidString,  // ID único gerado localmente
-            uid:       uid,
-            title:     title,
-            body:      body,
-            mood:      mood,
+            id: UUID().uuidString,
+            uid: uid,
+            title: title,
+            body: body,
+            mood: mood,
             createdAt: now,
             updatedAt: now
         )
 
-        journalService.createEntry(entry) { [weak self] result in
-            self?.onLoadingChanged?(false)
-            switch result {
-            case .success:       self?.onSaved?()
-            case .failure:       self?.onError?("Não foi possível salvar a entrada.")
-            }
-        }
+        try await journalService.createEntry(entry)
     }
+    
+    private func update(existing: JournalEntry,
+                        title: String,
+                        body: String,
+                        mood: Mood) async throws {
 
-    private func update(existing: JournalEntry, title: String, body: String, mood: Mood) {
-        // Cria uma cópia com os campos editados e updatedAt atualizado
-        var updated          = existing
-        updated.title        = title
-        updated.body         = body
-        updated.mood         = mood
-        updated.updatedAt    = Date()
+        var updated       = existing
+        updated.title     = title
+        updated.body      = body
+        updated.mood      = mood
+        updated.updatedAt = Date()
 
-        journalService.updateEntry(updated) { [weak self] result in
-            self?.onLoadingChanged?(false)
-            switch result {
-            case .success:   self?.onSaved?()
-            case .failure:   self?.onError?("Não foi possível atualizar a entrada.")
-            }
-        }
+        try await journalService.updateEntry(updated)
     }
 }

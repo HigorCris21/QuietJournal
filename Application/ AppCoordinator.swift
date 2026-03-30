@@ -3,61 +3,58 @@
 
 import UIKit
 
+@MainActor
 final class AppCoordinator: Coordinator {
 
     // MARK: - Properties
-
     var childCoordinators: [Coordinator] = []
 
     private let window: UIWindow
     private var navigationController: UINavigationController?
 
-    // Protocolos — nunca as implementações concretas
-    private let authService:    AuthServiceProtocol
+    private let authService: AuthServiceProtocol
     private let journalService: JournalServiceProtocol
 
     // MARK: - Init
-
     init(window: UIWindow,
-         authService:    AuthServiceProtocol,
+         authService: AuthServiceProtocol,
          journalService: JournalServiceProtocol) {
 
-        self.window               = window
-        self.authService          = authService
-        self.journalService       = journalService
+        self.window = window
+        self.authService = authService
+        self.journalService = journalService
         self.navigationController = UINavigationController()
 
         window.rootViewController = navigationController
     }
 
     // MARK: - Start
-
     func start() {
-        // Verifica sessão ativa no Firebase
         if authService.currentUserID != nil {
             showHome()
         } else {
             showAuth()
         }
+
+        window.makeKeyAndVisible()
     }
 
     // MARK: - Flows
-
     private func showAuth() {
-        let navigationController = UINavigationController()
-        self.navigationController = navigationController
+        let nav = UINavigationController()
+        navigationController = nav
 
         UIView.transition(
             with: window,
             duration: 0.3,
             options: .transitionCrossDissolve,
-            animations: {
-                self.window.rootViewController = navigationController
+            animations: { [weak self] in
+                self?.window.rootViewController = nav
             }
         )
 
         let authCoordinator = AuthCoordinator(
-            navigationController: navigationController,
+            navigationController: nav,
             authService: authService
         )
 
@@ -70,7 +67,6 @@ final class AppCoordinator: Coordinator {
         addChild(authCoordinator)
         authCoordinator.start()
     }
-    
 
     private func showHome() {
         guard let uid = authService.currentUserID else {
@@ -78,20 +74,20 @@ final class AppCoordinator: Coordinator {
             return
         }
 
-        let navigationController = UINavigationController()
-        self.navigationController = navigationController
+        let nav = UINavigationController()
+        navigationController = nav
 
         UIView.transition(
             with: window,
             duration: 0.3,
             options: .transitionCrossDissolve,
             animations: { [weak self] in
-                self?.window.rootViewController = navigationController
+                self?.window.rootViewController = nav
             }
         )
 
         let homeCoordinator = HomeCoordinator(
-            navigationController: navigationController,
+            navigationController: nav,
             journalService: journalService,
             authService: authService,
             uid: uid
