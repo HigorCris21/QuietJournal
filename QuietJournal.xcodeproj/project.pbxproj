@@ -84,11 +84,6 @@
 			path = Presentation;
 			sourceTree = "<group>";
 		};
-		EB771F1A2F5A229D00C2B7E5 /* Resources */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Resources;
-			sourceTree = "<group>";
-		};
 		EB771F1E2F5A22DF00C2B7E5 /* Domain */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Domain;
@@ -134,7 +129,6 @@
 			children = (
 				EBB320482F787DC8004D1B44 /* Mocks */,
 				EB771F1E2F5A22DF00C2B7E5 /* Domain */,
-				EB771F1A2F5A229D00C2B7E5 /* Resources */,
 				EB771F192F5A229400C2B7E5 /* Presentation */,
 				EB771F182F5A228F00C2B7E5 /* Data */,
 				EB771F172F5A228600C2B7E5 /* Core */,
@@ -185,7 +179,6 @@
 				EB771F172F5A228600C2B7E5 /* Core */,
 				EB771F182F5A228F00C2B7E5 /* Data */,
 				EB771F192F5A229400C2B7E5 /* Presentation */,
-				EB771F1A2F5A229D00C2B7E5 /* Resources */,
 				EB771F1E2F5A22DF00C2B7E5 /* Domain */,
 				EBB320482F787DC8004D1B44 /* Mocks */,
 			);
