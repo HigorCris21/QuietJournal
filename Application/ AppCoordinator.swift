@@ -10,7 +10,7 @@ final class AppCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
 
     private let window: UIWindow
-    private let navigationController: UINavigationController
+    private var navigationController: UINavigationController?
 
     // Protocolos — nunca as implementações concretas
     private let authService:    AuthServiceProtocol
@@ -44,19 +44,33 @@ final class AppCoordinator: Coordinator {
     // MARK: - Flows
 
     private func showAuth() {
+        let navigationController = UINavigationController()
+        self.navigationController = navigationController
+
+        UIView.transition(
+            with: window,
+            duration: 0.3,
+            options: .transitionCrossDissolve,
+            animations: {
+                self.window.rootViewController = navigationController
+            }
+        )
+
         let authCoordinator = AuthCoordinator(
             navigationController: navigationController,
             authService: authService
         )
 
-        authCoordinator.onAuthCompleted = { [weak self] in
-            self?.removeChild(authCoordinator)
-            self?.showHome()
+        authCoordinator.onAuthCompleted = { [weak self, weak authCoordinator] in
+            guard let self, let authCoordinator else { return }
+            self.removeChild(authCoordinator)
+            self.showHome()
         }
 
         addChild(authCoordinator)
         authCoordinator.start()
     }
+    
 
     private func showHome() {
         guard let uid = authService.currentUserID else {
@@ -64,20 +78,32 @@ final class AppCoordinator: Coordinator {
             return
         }
 
-        // AuthService agora é passado para HomeCoordinator.
-        let homeCoordinator = HomeCoordinator(
-            navigationController: navigationController,
-            journalService:       journalService,
-            authService:          authService,   // ← linha que faltava
-            uid:                  uid
+        let navigationController = UINavigationController()
+        self.navigationController = navigationController
+
+        UIView.transition(
+            with: window,
+            duration: 0.3,
+            options: .transitionCrossDissolve,
+            animations: { [weak self] in
+                self?.window.rootViewController = navigationController
+            }
         )
 
-        homeCoordinator.onLogout = { [weak self] in
-            self?.removeChild(homeCoordinator)
-            self?.showAuth()
+        let homeCoordinator = HomeCoordinator(
+            navigationController: navigationController,
+            journalService: journalService,
+            authService: authService,
+            uid: uid
+        )
+
+        homeCoordinator.onLogout = { [weak self, weak homeCoordinator] in
+            guard let self, let homeCoordinator else { return }
+            self.removeChild(homeCoordinator)
+            self.showAuth()
         }
 
         addChild(homeCoordinator)
         homeCoordinator.start()
-    } 
+    }
 }
