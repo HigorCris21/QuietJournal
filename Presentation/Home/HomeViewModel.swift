@@ -15,6 +15,7 @@ final class HomeViewModel: HomeViewModelProtocol {
     var onLoadingChanged: ((Bool) -> Void)?
 
     // MARK: - State
+
     private var entries: [JournalEntry] = []
     private(set) var displayEntries: [EntryDisplayModel] = []
 
@@ -51,10 +52,15 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     func deleteEntry(at index: Int) {
         guard entries.indices.contains(index) else { return }
+
         let entry = entries[index]
 
         journalService.deleteEntry(id: entry.id, for: uid) { [weak self] result in
-            if case .failure = result {
+            switch result {
+            case .success:
+                break // listener já atualiza lista automaticamente
+
+            case .failure:
                 self?.onError?("Não foi possível deletar a entrada.")
             }
         }
@@ -76,37 +82,36 @@ final class HomeViewModel: HomeViewModelProtocol {
         onLoadingChanged?(true)
 
         journalService.fetchEntries(for: uid) { [weak self] result in
+            guard let self else { return }
+
+            defer { self.onLoadingChanged?(false) }
+
             switch result {
             case .success(let entries):
-                self?.entries        = entries
-                self?.displayEntries = entries.map { Self.map($0) }
-
-                self?.onEntriesUpdated?(self?.displayEntries ?? [])
-                self?.onLoadingChanged?(false)
+                self.entries = entries
+                self.displayEntries = entries.map { Self.map($0) }
+                self.onEntriesUpdated?(self.displayEntries)
 
             case .failure:
-                self?.onLoadingChanged?(false)
-                self?.onError?("Erro ao carregar entradas.")
+                self.onError?("Erro ao carregar entradas.")
             }
         }
     }
 
     // MARK: - Mapping
 
-    //mudao visual da célula
     private static func map(_ entry: JournalEntry) -> EntryDisplayModel {
 
-        // Preview: primeiros 80 caracteres, sem quebras de linha
         let preview = entry.body
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .prefix(80)
             .replacingOccurrences(of: "\n", with: " ")
 
         return EntryDisplayModel(
-            title:   entry.title,
+            title: entry.title,
             bodyPreview: preview.isEmpty ? "Sem conteúdo" : String(preview),
-            subtitle:    AppConstants.Formatters.entryDate.string(from: entry.createdAt),
-            accessory:   entry.mood.emoji
+            subtitle: AppConstants.Formatters.entryDate.string(from: entry.createdAt),
+            accessory: entry.mood.emoji
         )
     }
 }
