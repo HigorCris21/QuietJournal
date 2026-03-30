@@ -6,54 +6,57 @@ import UIKit
 final class EntryCell: UITableViewCell {
 
     // MARK: - Reutilização
-
-    // Centralizado: uma string, um lugar. Mesma filosofia do AppConstants.Strings.Cell.entryCell
     static let reuseIdentifier = "EntryCell"
+
+    // MARK: - Layout Constants
+    private enum Layout {
+        static let leadingPadding: CGFloat = 12
+        static let trailingPadding: CGFloat = 8
+        static let verticalPadding: CGFloat = 12
+        static let spacing: CGFloat = 10
+        static let stackSpacing: CGFloat = 3
+        static let moodSize: CGFloat = 44
+    }
 
     // MARK: - UI Components
 
-    // Emoji do humor — âncora visual à esquerda
     private let moodLabel: UILabel = {
         let lbl = UILabel()
-        lbl.font      = UIFont.systemFont(ofSize: 32)
+        lbl.font = UIFont.systemFont(ofSize: 32)
         lbl.textAlignment = .center
         lbl.translatesAutoresizingMaskIntoConstraints = false
         return lbl
     }()
 
-    // Título da entrada — hierarquia primária
     private let titleLabel: UILabel = {
         let lbl = UILabel()
-        lbl.font          = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        lbl.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         lbl.numberOfLines = 1
         lbl.translatesAutoresizingMaskIntoConstraints = false
         return lbl
     }()
 
-    // Preview do body — contexto antes de abrir
     private let previewLabel: UILabel = {
         let lbl = UILabel()
-        lbl.font          = UIFont.systemFont(ofSize: 14)
-        lbl.textColor     = .secondaryLabel   // cinza semântico — respeita dark mode
+        lbl.font = UIFont.systemFont(ofSize: 14)
+        lbl.textColor = .secondaryLabel
         lbl.numberOfLines = 2
         lbl.translatesAutoresizingMaskIntoConstraints = false
         return lbl
     }()
 
-    // Data formatada — informação terciária, menor
     private let dateLabel: UILabel = {
         let lbl = UILabel()
-        lbl.font      = UIFont.systemFont(ofSize: 12)
+        lbl.font = UIFont.systemFont(ofSize: 12)
         lbl.textColor = .tertiaryLabel
         lbl.translatesAutoresizingMaskIntoConstraints = false
         return lbl
     }()
 
-    // Espaçamento — sem constraints manuais entre eles
     private lazy var textStack: UIStackView = {
         let sv = UIStackView(arrangedSubviews: [titleLabel, previewLabel, dateLabel])
-        sv.axis      = .vertical
-        sv.spacing   = 3
+        sv.axis = .vertical
+        sv.spacing = Layout.stackSpacing
         sv.translatesAutoresizingMaskIntoConstraints = false
         return sv
     }()
@@ -65,36 +68,64 @@ final class EntryCell: UITableViewCell {
         setupUI()
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) not used")
+    }
 
     // MARK: - Setup
 
     private func setupUI() {
         accessoryType = .disclosureIndicator
+        selectionStyle = .default
+        backgroundColor = .systemBackground
 
         contentView.addSubview(moodLabel)
         contentView.addSubview(textStack)
 
         NSLayoutConstraint.activate([
-
-            // Emoji: quadrado fixo à esquerda, centralizado verticalmente
-            moodLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            moodLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: Layout.leadingPadding),
             moodLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            moodLabel.widthAnchor.constraint(equalToConstant: 44),
+            moodLabel.widthAnchor.constraint(equalToConstant: Layout.moodSize),
 
-            // Stack: ocupa o espaço restante com margens confortáveis
-            textStack.leadingAnchor.constraint(equalTo: moodLabel.trailingAnchor, constant: 10),
-            textStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
-            textStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
-            textStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
+            textStack.leadingAnchor.constraint(equalTo: moodLabel.trailingAnchor, constant: Layout.spacing),
+            textStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -Layout.trailingPadding),
+            textStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: Layout.verticalPadding),
+            textStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -Layout.verticalPadding)
         ])
     }
 
+    // MARK: - Reuse
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+
+        moodLabel.text = nil
+        titleLabel.text = nil
+        previewLabel.text = nil
+        dateLabel.text = nil
+    }
+
     // MARK: - Configure
+
     func configure(with model: EntryDisplayModel) {
-        moodLabel.text    = model.accessory
-        titleLabel.text   = model.title
+        moodLabel.text = model.accessory.isEmpty ? "🙂" : model.accessory
+        titleLabel.text = model.title
         previewLabel.text = model.bodyPreview
-        dateLabel.text    = model.subtitle
+        dateLabel.text = model.subtitle
+
+        configureAccessibility()
+    }
+
+    // MARK: - Accessibility
+
+    private func configureAccessibility() {
+        isAccessibilityElement = true
+        accessibilityLabel = [
+            titleLabel.text,
+            previewLabel.text,
+            dateLabel.text
+        ]
+        .compactMap { $0 }
+        .joined(separator: ", ")
     }
 }
