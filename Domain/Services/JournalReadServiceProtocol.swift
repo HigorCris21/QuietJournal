@@ -5,13 +5,8 @@
 
 import Foundation
 
-protocol JournalReadServiceProtocol: AnyObject {
+protocol JournalReadServiceProtocol {
 
-    func observeEntries(
-        for uid: String,
-        onUpdate: @escaping ([JournalEntry]) -> Void,
-        onError: @escaping (Error) -> Void
-    )
-
-    func stopObserving()
+    /// Stream reativo de entries em tempo real
+    func entriesStream(for uid: String) -> AsyncStream<[JournalEntry]>
 }

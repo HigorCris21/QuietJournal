@@ -15,7 +15,7 @@ final class EntryViewModel {
 
     private let existingEntry: JournalEntry?
     private let journalService: JournalWriteServiceProtocol
-    private let authService: AuthServiceProtocol
+    private let uid: String
 
     // MARK: - Computed
 
@@ -38,11 +38,11 @@ final class EntryViewModel {
     // MARK: - Init
 
     init(journalService: JournalWriteServiceProtocol,
-         authService: AuthServiceProtocol,
+         uid: String,
          entry: JournalEntry?) {
 
         self.journalService = journalService
-        self.authService    = authService
+        self.uid            = uid
         self.existingEntry  = entry
     }
 
@@ -55,11 +55,6 @@ final class EntryViewModel {
             return
         }
 
-        guard let uid = authService.currentUserID else {
-            onError?("Usuário não autenticado.")
-            return
-        }
-
         onLoadingChanged?(true)
 
         Task {
@@ -67,7 +62,7 @@ final class EntryViewModel {
                 if let existing = existingEntry {
                     try await update(existing: existing, title: title, body: body, mood: mood)
                 } else {
-                    try await create(uid: uid, title: title, body: body, mood: mood)
+                    try await create(title: title, body: body, mood: mood)
                 }
 
                 onLoadingChanged?(false)
@@ -86,8 +81,7 @@ final class EntryViewModel {
 
     // MARK: - Private
 
-    private func create(uid: String,
-                        title: String,
+    private func create(title: String,
                         body: String,
                         mood: Mood) async throws {
 

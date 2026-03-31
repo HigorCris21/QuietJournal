@@ -5,8 +5,6 @@ import UIKit
 @MainActor
 final class AppCoordinator: Coordinator {
 
-    // MARK: - Properties
-
     var childCoordinators: [Coordinator] = []
 
     private let window: UIWindow
@@ -15,8 +13,6 @@ final class AppCoordinator: Coordinator {
     private let authService: AuthServiceProtocol
     private let journalReadService: JournalReadServiceProtocol
     private let journalWriteService: JournalWriteServiceProtocol
-
-    // MARK: - Init
 
     init(window: UIWindow,
          authService: AuthServiceProtocol,
@@ -32,8 +28,6 @@ final class AppCoordinator: Coordinator {
         window.rootViewController = navigationController
     }
 
-    // MARK: - Start
-
     func start() {
         if authService.currentUserID != nil {
             showHome()
@@ -43,8 +37,6 @@ final class AppCoordinator: Coordinator {
 
         window.makeKeyAndVisible()
     }
-
-    // MARK: - Flows
 
     private func showAuth() {
         let nav = UINavigationController()
@@ -75,6 +67,8 @@ final class AppCoordinator: Coordinator {
     }
 
     private func showHome() {
+
+        // 🔥 SOURCE OF TRUTH
         guard let uid = authService.currentUserID else {
             showAuth()
             return
@@ -96,7 +90,8 @@ final class AppCoordinator: Coordinator {
             navigationController: nav,
             journalReadService: journalReadService,
             journalWriteService: journalWriteService,
-            authService: authService
+            authService: authService,
+            uid: uid // ✅ CORREÇÃO CRÍTICA
         )
 
         homeCoordinator.onLogout = { [weak self, weak homeCoordinator] in

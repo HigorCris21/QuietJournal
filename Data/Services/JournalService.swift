@@ -1,3 +1,5 @@
+// Data/Services/JournalService.swift
+
 import Foundation
 import FirebaseFirestore
 
@@ -6,11 +8,6 @@ final class JournalService: JournalReadServiceProtocol, JournalWriteServiceProto
     // MARK: - Properties
 
     private let db = Firestore.firestore()
-    private var listener: ListenerRegistration?
-
-    deinit {
-        listener?.remove()
-    }
 
     // MARK: - Helpers
 
@@ -20,54 +17,42 @@ final class JournalService: JournalReadServiceProtocol, JournalWriteServiceProto
           .collection("entries")
     }
 
-    // MARK: - READ
+    // MARK: - READ (AsyncStream)
 
-    func observeEntries(
-        for uid: String,
-        onUpdate: @escaping ([JournalEntry]) -> Void,
-        onError: @escaping (Error) -> Void
-    ) {
+    func entriesStream(for uid: String) -> AsyncStream<[JournalEntry]> {
 
-        listener?.remove()
+        return AsyncStream { continuation in
 
-        listener = entriesCollection(for: uid)
-            .order(by: "createdAt", descending: true)
-            .addSnapshotListener { snapshot, error in
+            let listener = entriesCollection(for: uid)
+                .order(by: "createdAt", descending: true)
+                .addSnapshotListener { snapshot, error in
 
-                if let error = error {
-                    onError(error)
-                    return
-                }
-
-                guard let documents = snapshot?.documents else {
-                    onUpdate([])
-                    return
-                }
-
-                let entries: [JournalEntry] = documents.compactMap { doc in
-                    var data = doc.data()
-
-                    if let ts = data["createdAt"] as? Timestamp {
-                        data["createdAt"] = ts.dateValue()
+                    if let error = error {
+                        print("Firestore error:", error)
+                        continuation.yield([])
+                        return
                     }
 
-                    if let ts = data["updatedAt"] as? Timestamp {
-                        data["updatedAt"] = ts.dateValue()
+                    guard let documents = snapshot?.documents else {
+                        continuation.yield([])
+                        return
                     }
 
-                    return JournalEntry.fromFirestore(
-                        id: doc.documentID,
-                        data: data
-                    )
+                    let entries: [JournalEntry] = documents.compactMap { doc in
+                        JournalEntry.fromFirestore(
+                            id: doc.documentID,
+                            data: doc.data()
+                        )
+                    }
+
+                    continuation.yield(entries)
                 }
 
-                onUpdate(entries)
+            // 🔥 Importantíssimo: cleanup correto
+            continuation.onTermination = { _ in
+                listener.remove()
             }
-    }
-
-    func stopObserving() {
-        listener?.remove()
-        listener = nil
+        }
     }
 
     // MARK: - WRITE

@@ -11,6 +11,7 @@ final class HomeCoordinator: Coordinator {
     private let journalReadService: JournalReadServiceProtocol
     private let journalWriteService: JournalWriteServiceProtocol
     private let authService: AuthServiceProtocol
+    private let uid: String
 
     var onLogout: (() -> Void)?
 
@@ -19,12 +20,14 @@ final class HomeCoordinator: Coordinator {
     init(navigationController: UINavigationController,
          journalReadService: JournalReadServiceProtocol,
          journalWriteService: JournalWriteServiceProtocol,
-         authService: AuthServiceProtocol) {
+         authService: AuthServiceProtocol,
+         uid: String) {
 
         self.navigationController = navigationController
         self.journalReadService = journalReadService
         self.journalWriteService = journalWriteService
         self.authService = authService
+        self.uid = uid
     }
 
     // MARK: - Start
@@ -40,7 +43,8 @@ final class HomeCoordinator: Coordinator {
         let viewModel = HomeViewModel(
             readService: journalReadService,
             writeService: journalWriteService,
-            authService: authService
+            authService: authService,
+            uid: uid
         )
 
         viewModel.onLogout = { [weak self] in
@@ -63,7 +67,7 @@ final class HomeCoordinator: Coordinator {
 
         let viewModel = EntryViewModel(
             journalService: journalWriteService,
-            authService: authService,
+            uid: uid,
             entry: nil
         )
 
@@ -83,7 +87,7 @@ final class HomeCoordinator: Coordinator {
 
         let viewModel = EntryViewModel(
             journalService: journalWriteService,
-            authService: authService,
+            uid: uid,
             entry: entry
         )
 

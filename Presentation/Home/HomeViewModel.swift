@@ -20,27 +20,33 @@ final class HomeViewModel: HomeViewModelProtocol {
     private let readService: JournalReadServiceProtocol
     private let writeService: JournalWriteServiceProtocol
     private let authService: AuthServiceProtocol
+    private let uid: String
+
+    // MARK: - Task Control
+
+    private var streamTask: Task<Void, Never>?
 
     // MARK: - Init
 
     init(readService: JournalReadServiceProtocol,
          writeService: JournalWriteServiceProtocol,
-         authService: AuthServiceProtocol) {
+         authService: AuthServiceProtocol,
+         uid: String) {
 
         self.readService  = readService
         self.writeService = writeService
         self.authService  = authService
+        self.uid          = uid
     }
 
     // MARK: - Lifecycle
 
     func viewDidLoad() {
-        guard let uid = authService.currentUserID else {
-            onError?("Usuário não autenticado.")
-            return
-        }
+        observeEntries()
+    }
 
-        observeEntries(uid: uid)
+    deinit {
+        streamTask?.cancel()
     }
 
     // MARK: - Actions
@@ -56,11 +62,6 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     func deleteEntry(at index: Int) {
         guard entries.indices.contains(index) else { return }
-
-        guard let uid = authService.currentUserID else {
-            onError?("Usuário não autenticado.")
-            return
-        }
 
         let entry = entries[index]
 
@@ -80,7 +81,7 @@ final class HomeViewModel: HomeViewModelProtocol {
     func logout() {
         do {
             try authService.logout()
-            readService.stopObserving()
+            streamTask?.cancel()
             onLogout?()
         } catch {
             onError?("Erro ao sair.")
@@ -89,26 +90,22 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Private
 
-    private func observeEntries(uid: String) {
+    private func observeEntries() {
 
         onLoadingChanged?(true)
 
-        readService.observeEntries(
-            for: uid,
-            onUpdate: { [weak self] (entries: [JournalEntry]) in
-                guard let self else { return }
+        streamTask = Task { [weak self] in
+            guard let self else { return }
+
+            for await entries in readService.entriesStream(for: uid) {
 
                 self.entries = entries
                 self.displayEntries = entries.map { Self.map($0) }
 
                 self.onEntriesUpdated?(self.displayEntries)
                 self.onLoadingChanged?(false)
-            },
-            onError: { [weak self] _ in
-                self?.onError?("Erro ao carregar entradas.")
-                self?.onLoadingChanged?(false)
             }
-        )
+        }
     }
 
     private static func map(_ entry: JournalEntry) -> EntryDisplayModel {
