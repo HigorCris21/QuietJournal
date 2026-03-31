@@ -1,13 +1,12 @@
 //
 //  JournalReadServiceProtocol.swift
 //  QuietJournal
-//
-//  Created by Higor  Lo Castro on 30/03/26.
-//
+
 
 import Foundation
 
-protocol JournalReadServiceProtocol {
+protocol JournalReadServiceProtocol: AnyObject {
+
     func observeEntries(
         for uid: String,
         onUpdate: @escaping ([JournalEntry]) -> Void,

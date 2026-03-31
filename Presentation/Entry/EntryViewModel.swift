@@ -1,5 +1,4 @@
 // Presentation/Entry/EntryViewModel.swift
-// QuietJournal — Presentation/Entry
 
 import Foundation
 
@@ -14,24 +13,36 @@ final class EntryViewModel {
 
     // MARK: - State
 
-    // Se entry for nil, estamos criando. Se não, editando.
+   
     private let existingEntry: JournalEntry?
-    private let journalService: JournalServiceProtocol
+
+    private let journalService: JournalWriteServiceProtocol
     private let uid: String
 
-    // Modo da tela — usado pela ViewController para ajustar o título
-    var isEditing: Bool { existingEntry != nil }
+    // MARK: - Computed
 
-    // Valores iniciais para preencher os campos na edição
-    var initialTitle: String { existingEntry?.title ?? "" }
-    var initialBody:  String { existingEntry?.body  ?? "" }
-    var initialMood:  Mood   { existingEntry?.mood  ?? .neutral }
+    var isEditing: Bool {
+        return existingEntry != nil
+    }
+
+    var initialTitle: String {
+        return existingEntry?.title ?? ""
+    }
+
+    var initialBody: String {
+        return existingEntry?.body ?? ""
+    }
+
+    var initialMood: Mood {
+        return existingEntry?.mood ?? .neutral
+    }
 
     // MARK: - Init
 
-    init(journalService: JournalServiceProtocol,
+    init(journalService: JournalWriteServiceProtocol,
          uid: String,
-         entry: JournalEntry?) {
+         entry: JournalEntry?) { // 🔥 opcional aqui
+
         self.journalService = journalService
         self.uid            = uid
         self.existingEntry  = entry
@@ -88,7 +99,7 @@ final class EntryViewModel {
 
         try await journalService.createEntry(entry)
     }
-    
+
     private func update(existing: JournalEntry,
                         title: String,
                         body: String,

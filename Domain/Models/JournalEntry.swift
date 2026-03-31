@@ -1,10 +1,9 @@
 // JournalEntry.swift
 // QuietJournal — Domain/Models
-
 import Foundation
+import FirebaseFirestore
 
 // Representa uma entrada (página) do diário.
-
 struct JournalEntry {
     let id:        String
     let uid:       String
@@ -19,17 +18,19 @@ struct JournalEntry {
 
 extension JournalEntry {
 
+    /// Converte o modelo de domínio para formato aceito pelo Firestore
     func toFirestore() -> [String: Any] {
         return [
             "uid":       uid,
             "title":     title,
             "body":      body,
             "mood":      mood.rawValue,
-            "createdAt": createdAt,
-            "updatedAt": updatedAt
+            "createdAt": Timestamp(date: createdAt),
+            "updatedAt": Timestamp(date: updatedAt)
         ]
     }
 
+    /// Converte dados do Firestore para o modelo de domínio
     static func fromFirestore(id: String, data: [String: Any]) -> JournalEntry? {
         guard
             let uid       = data["uid"]       as? String,
@@ -37,8 +38,8 @@ extension JournalEntry {
             let body      = data["body"]      as? String,
             let moodRaw   = data["mood"]      as? String,
             let mood      = Mood(rawValue: moodRaw),
-            let createdAt = data["createdAt"] as? Date,
-            let updatedAt = data["updatedAt"] as? Date
+            let createdTs = data["createdAt"] as? Timestamp,
+            let updatedTs = data["updatedAt"] as? Timestamp
         else { return nil }
 
         return JournalEntry(
@@ -47,8 +48,8 @@ extension JournalEntry {
             title:     title,
             body:      body,
             mood:      mood,
-            createdAt: createdAt,
-            updatedAt: updatedAt
+            createdAt: createdTs.dateValue(),
+            updatedAt: updatedTs.dateValue()
         )
     }
 }

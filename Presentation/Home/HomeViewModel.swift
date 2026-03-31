@@ -1,8 +1,3 @@
-// Presentation/Home/HomeViewModel.swift
-// QuietJournal — Presentation/Home
-
-import Foundation
-
 @MainActor
 final class HomeViewModel: HomeViewModelProtocol {
 
@@ -22,25 +17,31 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Dependencies
 
-    private let journalService: JournalServiceProtocol
-    private let authService:    AuthServiceProtocol
-    private let uid:            String
+    private let readService: JournalReadServiceProtocol
+    private let writeService: JournalWriteServiceProtocol
+    private let authService: AuthServiceProtocol
+    private let uid: String
 
     // MARK: - Init
 
-    init(journalService: JournalServiceProtocol,
-         authService:    AuthServiceProtocol,
-         uid:            String) {
-        self.journalService = journalService
-        self.authService    = authService
-        self.uid            = uid
+    init(readService: JournalReadServiceProtocol,
+         writeService: JournalWriteServiceProtocol,
+         authService: AuthServiceProtocol,
+         uid: String) {
+
+        self.readService  = readService
+        self.writeService = writeService
+        self.authService  = authService
+        self.uid          = uid
+    }
+
+    // MARK: - Lifecycle
+
+    func viewDidLoad() {
+        observeEntries()
     }
 
     // MARK: - Actions
-
-    func viewDidLoad() {
-        fetchEntries()
-    }
 
     func newEntryTapped() {
         onNewEntry?()
@@ -51,7 +52,6 @@ final class HomeViewModel: HomeViewModelProtocol {
         onEditEntry?(entries[index])
     }
 
-    // 🔥 REFATORADO PARA ASYNC/AWAIT
     func deleteEntry(at index: Int) {
         guard entries.indices.contains(index) else { return }
 
@@ -61,10 +61,9 @@ final class HomeViewModel: HomeViewModelProtocol {
             onLoadingChanged?(true)
 
             do {
-                try await journalService.deleteEntry(id: entry.id, for: uid)
-                // Não atualiza lista manualmente → Firestore listener faz isso
+                try await writeService.deleteEntry(id: entry.id, for: uid)
             } catch {
-                onError?("Não foi possível deletar a entrada.")
+                onError?("Não foi possível deletar.")
             }
 
             onLoadingChanged?(false)
@@ -74,36 +73,36 @@ final class HomeViewModel: HomeViewModelProtocol {
     func logout() {
         do {
             try authService.logout()
-            journalService.stopListening()
+            readService.stopObserving()
             onLogout?()
         } catch {
-            onError?("Não foi possível encerrar a sessão. Tente novamente.")
+            onError?("Erro ao sair.")
         }
     }
 
     // MARK: - Private
 
-    private func fetchEntries() {
+    private func observeEntries() {
+
         onLoadingChanged?(true)
 
-        journalService.fetchEntries(for: uid) { [weak self] result in
-            guard let self else { return }
+        readService.observeEntries(
+            for: uid,
+            onUpdate: { [weak self] (entries: [JournalEntry]) in
+                guard let self else { return }
 
-            defer { self.onLoadingChanged?(false) }
-
-            switch result {
-            case .success(let entries):
                 self.entries = entries
                 self.displayEntries = entries.map { Self.map($0) }
+
                 self.onEntriesUpdated?(self.displayEntries)
-
-            case .failure:
-                self.onError?("Erro ao carregar entradas.")
+                self.onLoadingChanged?(false)
+            },
+            onError: { [weak self] _ in
+                self?.onError?("Erro ao carregar entradas.")
+                self?.onLoadingChanged?(false)
             }
-        }
+        )
     }
-
-    // MARK: - Mapping
 
     private static func map(_ entry: JournalEntry) -> EntryDisplayModel {
 

@@ -13,26 +13,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
+        // MARK: - Firebase
         FirebaseApp.configure()
 
-        // UIWindow criada a partir da cena ativa
+        // MARK: - Window
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
             return true
         }
 
-        window = UIWindow(windowScene: scene)
+        let window = UIWindow(windowScene: scene)
+        self.window = window
 
-        let authService    = AuthService()
+        // MARK: - Services
+
+        let authService = AuthService()
         let journalService = JournalService()
 
-        appCoordinator = AppCoordinator(
-            window: window!,
+        // 🔥 MESMA INSTÂNCIA, DUAS ABSTRAÇÕES
+        let journalReadService: JournalReadServiceProtocol = journalService
+        let journalWriteService: JournalWriteServiceProtocol = journalService
+
+        // MARK: - Coordinator
+
+        let coordinator = AppCoordinator(
+            window: window,
             authService: authService,
-            journalService: journalService
+            journalReadService: journalReadService,
+            journalWriteService: journalWriteService
         )
 
-        appCoordinator?.start()
-        window?.makeKeyAndVisible()
+        self.appCoordinator = coordinator
+
+        coordinator.start()
 
         return true
     }

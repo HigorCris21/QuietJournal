@@ -1,5 +1,4 @@
 // Application/AppCoordinator.swift
-// QuietJournal — Application
 
 import UIKit
 
@@ -7,28 +6,34 @@ import UIKit
 final class AppCoordinator: Coordinator {
 
     // MARK: - Properties
+
     var childCoordinators: [Coordinator] = []
 
     private let window: UIWindow
     private var navigationController: UINavigationController?
 
     private let authService: AuthServiceProtocol
-    private let journalService: JournalServiceProtocol
+    private let journalReadService: JournalReadServiceProtocol
+    private let journalWriteService: JournalWriteServiceProtocol
 
     // MARK: - Init
+
     init(window: UIWindow,
          authService: AuthServiceProtocol,
-         journalService: JournalServiceProtocol) {
+         journalReadService: JournalReadServiceProtocol,
+         journalWriteService: JournalWriteServiceProtocol) {
 
         self.window = window
         self.authService = authService
-        self.journalService = journalService
+        self.journalReadService = journalReadService
+        self.journalWriteService = journalWriteService
         self.navigationController = UINavigationController()
 
         window.rootViewController = navigationController
     }
 
     // MARK: - Start
+
     func start() {
         if authService.currentUserID != nil {
             showHome()
@@ -40,6 +45,7 @@ final class AppCoordinator: Coordinator {
     }
 
     // MARK: - Flows
+
     private func showAuth() {
         let nav = UINavigationController()
         navigationController = nav
@@ -88,7 +94,8 @@ final class AppCoordinator: Coordinator {
 
         let homeCoordinator = HomeCoordinator(
             navigationController: nav,
-            journalService: journalService,
+            journalReadService: journalReadService,
+            journalWriteService: journalWriteService,
             authService: authService,
             uid: uid
         )

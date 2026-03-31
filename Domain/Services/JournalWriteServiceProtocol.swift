@@ -7,7 +7,10 @@
 
 import Foundation
 
-protocol JournalWriteServiceProtocol {
+import Foundation
+
+protocol JournalWriteServiceProtocol: AnyObject {
+
     func createEntry(_ entry: JournalEntry) async throws
     func updateEntry(_ entry: JournalEntry) async throws
     func deleteEntry(id: String, for uid: String) async throws

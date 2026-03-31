@@ -1,5 +1,4 @@
 // Presentation/Home/HomeCoordinator.swift
-// QuietJournal — Presentation/Home
 
 import UIKit
 
@@ -11,24 +10,26 @@ final class HomeCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
 
     private let navigationController: UINavigationController
-    private let journalService: JournalServiceProtocol
+    private let journalReadService: JournalReadServiceProtocol
+    private let journalWriteService: JournalWriteServiceProtocol
     private let authService: AuthServiceProtocol
     private let uid: String
 
-    // Callback para avisar o AppCoordinator que o logout foi executado
     var onLogout: (() -> Void)?
 
     // MARK: - Init
 
     init(navigationController: UINavigationController,
-         journalService: JournalServiceProtocol,
+         journalReadService: JournalReadServiceProtocol,
+         journalWriteService: JournalWriteServiceProtocol,
          authService: AuthServiceProtocol,
          uid: String) {
 
         self.navigationController = navigationController
-        self.journalService       = journalService
-        self.authService          = authService
-        self.uid                  = uid
+        self.journalReadService = journalReadService
+        self.journalWriteService = journalWriteService
+        self.authService = authService
+        self.uid = uid
     }
 
     // MARK: - Start
@@ -42,7 +43,8 @@ final class HomeCoordinator: Coordinator {
     private func showHome() {
 
         let viewModel = HomeViewModel(
-            journalService: journalService,
+            readService: journalReadService,
+            writeService: journalWriteService,
             authService: authService,
             uid: uid
         )
@@ -63,12 +65,13 @@ final class HomeCoordinator: Coordinator {
         navigationController.setViewControllers([vc], animated: true)
     }
 
+    // ✅ CORREÇÃO AQUI
     private func showNewEntry() {
 
         let viewModel = EntryViewModel(
-            journalService: journalService,
+            journalService: journalWriteService,
             uid: uid,
-            entry: nil
+            entry: nil // 🔥 nova entry = nil
         )
 
         viewModel.onSaved = { [weak self] in
@@ -86,9 +89,9 @@ final class HomeCoordinator: Coordinator {
     private func showEditEntry(_ entry: JournalEntry) {
 
         let viewModel = EntryViewModel(
-            journalService: journalService,
+            journalService: journalWriteService,
             uid: uid,
-            entry: entry
+            entry: entry // 🔥 edição = objeto real
         )
 
         viewModel.onSaved = { [weak self] in
