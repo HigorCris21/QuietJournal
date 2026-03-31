@@ -1,5 +1,3 @@
-// Presentation/Home/HomeCoordinator.swift
-
 import UIKit
 
 @MainActor
@@ -13,7 +11,6 @@ final class HomeCoordinator: Coordinator {
     private let journalReadService: JournalReadServiceProtocol
     private let journalWriteService: JournalWriteServiceProtocol
     private let authService: AuthServiceProtocol
-    private let uid: String
 
     var onLogout: (() -> Void)?
 
@@ -22,14 +19,12 @@ final class HomeCoordinator: Coordinator {
     init(navigationController: UINavigationController,
          journalReadService: JournalReadServiceProtocol,
          journalWriteService: JournalWriteServiceProtocol,
-         authService: AuthServiceProtocol,
-         uid: String) {
+         authService: AuthServiceProtocol) {
 
         self.navigationController = navigationController
         self.journalReadService = journalReadService
         self.journalWriteService = journalWriteService
         self.authService = authService
-        self.uid = uid
     }
 
     // MARK: - Start
@@ -45,8 +40,7 @@ final class HomeCoordinator: Coordinator {
         let viewModel = HomeViewModel(
             readService: journalReadService,
             writeService: journalWriteService,
-            authService: authService,
-            uid: uid
+            authService: authService
         )
 
         viewModel.onLogout = { [weak self] in
@@ -65,13 +59,12 @@ final class HomeCoordinator: Coordinator {
         navigationController.setViewControllers([vc], animated: true)
     }
 
-    // ✅ CORREÇÃO AQUI
     private func showNewEntry() {
 
         let viewModel = EntryViewModel(
             journalService: journalWriteService,
-            uid: uid,
-            entry: nil // 🔥 nova entry = nil
+            authService: authService,
+            entry: nil
         )
 
         viewModel.onSaved = { [weak self] in
@@ -90,8 +83,8 @@ final class HomeCoordinator: Coordinator {
 
         let viewModel = EntryViewModel(
             journalService: journalWriteService,
-            uid: uid,
-            entry: entry // 🔥 edição = objeto real
+            authService: authService,
+            entry: entry
         )
 
         viewModel.onSaved = { [weak self] in

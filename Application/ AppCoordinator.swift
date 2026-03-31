@@ -96,8 +96,7 @@ final class AppCoordinator: Coordinator {
             navigationController: nav,
             journalReadService: journalReadService,
             journalWriteService: journalWriteService,
-            authService: authService,
-            uid: uid
+            authService: authService
         )
 
         homeCoordinator.onLogout = { [weak self, weak homeCoordinator] in

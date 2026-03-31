@@ -20,25 +20,27 @@ final class HomeViewModel: HomeViewModelProtocol {
     private let readService: JournalReadServiceProtocol
     private let writeService: JournalWriteServiceProtocol
     private let authService: AuthServiceProtocol
-    private let uid: String
 
     // MARK: - Init
 
     init(readService: JournalReadServiceProtocol,
          writeService: JournalWriteServiceProtocol,
-         authService: AuthServiceProtocol,
-         uid: String) {
+         authService: AuthServiceProtocol) {
 
         self.readService  = readService
         self.writeService = writeService
         self.authService  = authService
-        self.uid          = uid
     }
 
     // MARK: - Lifecycle
 
     func viewDidLoad() {
-        observeEntries()
+        guard let uid = authService.currentUserID else {
+            onError?("Usuário não autenticado.")
+            return
+        }
+
+        observeEntries(uid: uid)
     }
 
     // MARK: - Actions
@@ -54,6 +56,11 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     func deleteEntry(at index: Int) {
         guard entries.indices.contains(index) else { return }
+
+        guard let uid = authService.currentUserID else {
+            onError?("Usuário não autenticado.")
+            return
+        }
 
         let entry = entries[index]
 
@@ -82,7 +89,7 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Private
 
-    private func observeEntries() {
+    private func observeEntries(uid: String) {
 
         onLoadingChanged?(true)
 

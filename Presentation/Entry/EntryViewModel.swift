@@ -13,38 +13,36 @@ final class EntryViewModel {
 
     // MARK: - State
 
-   
     private let existingEntry: JournalEntry?
-
     private let journalService: JournalWriteServiceProtocol
-    private let uid: String
+    private let authService: AuthServiceProtocol
 
     // MARK: - Computed
 
     var isEditing: Bool {
-        return existingEntry != nil
+        existingEntry != nil
     }
 
     var initialTitle: String {
-        return existingEntry?.title ?? ""
+        existingEntry?.title ?? ""
     }
 
     var initialBody: String {
-        return existingEntry?.body ?? ""
+        existingEntry?.body ?? ""
     }
 
     var initialMood: Mood {
-        return existingEntry?.mood ?? .neutral
+        existingEntry?.mood ?? .neutral
     }
 
     // MARK: - Init
 
     init(journalService: JournalWriteServiceProtocol,
-         uid: String,
-         entry: JournalEntry?) { // 🔥 opcional aqui
+         authService: AuthServiceProtocol,
+         entry: JournalEntry?) {
 
         self.journalService = journalService
-        self.uid            = uid
+        self.authService    = authService
         self.existingEntry  = entry
     }
 
@@ -57,6 +55,11 @@ final class EntryViewModel {
             return
         }
 
+        guard let uid = authService.currentUserID else {
+            onError?("Usuário não autenticado.")
+            return
+        }
+
         onLoadingChanged?(true)
 
         Task {
@@ -64,7 +67,7 @@ final class EntryViewModel {
                 if let existing = existingEntry {
                     try await update(existing: existing, title: title, body: body, mood: mood)
                 } else {
-                    try await create(title: title, body: body, mood: mood)
+                    try await create(uid: uid, title: title, body: body, mood: mood)
                 }
 
                 onLoadingChanged?(false)
@@ -83,7 +86,10 @@ final class EntryViewModel {
 
     // MARK: - Private
 
-    private func create(title: String, body: String, mood: Mood) async throws {
+    private func create(uid: String,
+                        title: String,
+                        body: String,
+                        mood: Mood) async throws {
 
         let now = Date()
 
