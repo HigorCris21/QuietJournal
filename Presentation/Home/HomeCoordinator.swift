@@ -32,9 +32,12 @@ final class HomeCoordinator: Coordinator {
 
     private func showHome() {
 
+        let getEntriesUseCase = GetEntriesUseCase(service: journalReadService)
+        let deleteEntryUseCase = DeleteEntryUseCase(service: journalWriteService)
+
         let viewModel = HomeViewModel(
-            readService: journalReadService,
-            writeService: journalWriteService,
+            getEntriesUseCase: getEntriesUseCase,
+            deleteEntryUseCase: deleteEntryUseCase,
             authService: authService,
             uid: uid
         )
@@ -55,10 +58,16 @@ final class HomeCoordinator: Coordinator {
         navigationController.setViewControllers([vc], animated: true)
     }
 
+    // MARK: - Entry Flow
+
     private func showNewEntry() {
 
+        let createUseCase = CreateEntryUseCase(service: journalWriteService)
+        let updateUseCase = UpdateEntryUseCase(service: journalWriteService)
+
         let viewModel = EntryViewModel(
-            journalService: journalWriteService,
+            createEntryUseCase: createUseCase,
+            updateEntryUseCase: updateUseCase,
             uid: uid,
             entry: nil
         )
@@ -71,8 +80,12 @@ final class HomeCoordinator: Coordinator {
 
     private func showEditEntry(_ entry: JournalEntry) {
 
+        let createUseCase = CreateEntryUseCase(service: journalWriteService)
+        let updateUseCase = UpdateEntryUseCase(service: journalWriteService)
+
         let viewModel = EntryViewModel(
-            journalService: journalWriteService,
+            createEntryUseCase: createUseCase,
+            updateEntryUseCase: updateUseCase,
             uid: uid,
             entry: entry
         )

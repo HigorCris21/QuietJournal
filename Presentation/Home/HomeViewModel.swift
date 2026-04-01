@@ -1,4 +1,3 @@
-
 import Foundation
 
 @MainActor
@@ -20,8 +19,8 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Dependencies
 
-    private let readService: JournalReadServiceProtocol
-    private let writeService: JournalWriteServiceProtocol
+    private let getEntriesUseCase: GetEntriesUseCase
+    private let deleteEntryUseCase: DeleteEntryUseCase
     private let authService: AuthServiceProtocol
     private let uid: String
 
@@ -29,13 +28,13 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Init
 
-    init(readService: JournalReadServiceProtocol,
-         writeService: JournalWriteServiceProtocol,
+    init(getEntriesUseCase: GetEntriesUseCase,
+         deleteEntryUseCase: DeleteEntryUseCase,
          authService: AuthServiceProtocol,
          uid: String) {
 
-        self.readService = readService
-        self.writeService = writeService
+        self.getEntriesUseCase = getEntriesUseCase
+        self.deleteEntryUseCase = deleteEntryUseCase
         self.authService = authService
         self.uid = uid
     }
@@ -70,7 +69,7 @@ final class HomeViewModel: HomeViewModelProtocol {
             onLoadingChanged?(true)
 
             do {
-                try await writeService.deleteEntry(id: entry.id, for: uid)
+                try await deleteEntryUseCase.execute(id: entry.id, uid: uid)
             } catch {
                 onError?(.deleteFailed)
             }
@@ -98,11 +97,9 @@ final class HomeViewModel: HomeViewModelProtocol {
         streamTask = Task { [weak self] in
             guard let self else { return }
 
-            for await entries in readService.entriesStream(for: uid) {
+            for await entries in getEntriesUseCase.execute(uid: uid) {
 
                 self.entries = entries
-
-                // ✅ USANDO MAPPER (CORRETO)
                 self.displayEntries = entries.map(EntryDisplayMapper.map)
 
                 self.onEntriesUpdated?(self.displayEntries)

@@ -2,14 +2,22 @@ import Foundation
 
 final class EntryViewModel {
 
+    // MARK: - Callbacks
+
     var onSaved: (() -> Void)?
     var onCancelled: (() -> Void)?
     var onError: ((EntryError) -> Void)?
     var onLoadingChanged: ((Bool) -> Void)?
 
-    private let existingEntry: JournalEntry?
-    private let journalService: JournalWriteServiceProtocol
+    // MARK: - Dependencies
+
+    private let createEntryUseCase: CreateEntryUseCase
+    private let updateEntryUseCase: UpdateEntryUseCase
     private let uid: String
+
+    private let existingEntry: JournalEntry?
+
+    // MARK: - Computed
 
     var isEditing: Bool {
         existingEntry != nil
@@ -27,14 +35,20 @@ final class EntryViewModel {
         existingEntry?.mood ?? .neutral
     }
 
-    init(journalService: JournalWriteServiceProtocol,
+    // MARK: - Init
+
+    init(createEntryUseCase: CreateEntryUseCase,
+         updateEntryUseCase: UpdateEntryUseCase,
          uid: String,
          entry: JournalEntry?) {
 
-        self.journalService = journalService
+        self.createEntryUseCase = createEntryUseCase
+        self.updateEntryUseCase = updateEntryUseCase
         self.uid = uid
         self.existingEntry = entry
     }
+
+    // MARK: - Actions
 
     func save(title: String, body: String, mood: Mood) {
 
@@ -67,6 +81,8 @@ final class EntryViewModel {
         onCancelled?()
     }
 
+    // MARK: - Private
+
     private func create(title: String, body: String, mood: Mood) async throws {
 
         let now = Date()
@@ -81,7 +97,7 @@ final class EntryViewModel {
             updatedAt: now
         )
 
-        try await journalService.createEntry(entry)
+        try await createEntryUseCase.execute(entry)
     }
 
     private func update(existing: JournalEntry,
@@ -95,6 +111,6 @@ final class EntryViewModel {
         updated.mood = mood
         updated.updatedAt = Date()
 
-        try await journalService.updateEntry(updated)
+        try await updateEntryUseCase.execute(updated)
     }
 }
