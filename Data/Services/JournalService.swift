@@ -1,34 +1,32 @@
-// Data/Services/JournalService.swift
-
 import Foundation
 import FirebaseFirestore
 
 final class JournalService: JournalReadServiceProtocol, JournalWriteServiceProtocol {
 
     // MARK: - Properties
-
     private let db = Firestore.firestore()
 
     // MARK: - Helpers
 
     private func entriesCollection(for uid: String) -> CollectionReference {
         db.collection("users")
-          .document(uid)
-          .collection("entries")
+            .document(uid)
+            .collection("entries")
     }
 
     // MARK: - READ (AsyncStream)
 
     func entriesStream(for uid: String) -> AsyncStream<[JournalEntry]> {
 
-        return AsyncStream { continuation in
+        AsyncStream { continuation in
 
             let listener = entriesCollection(for: uid)
                 .order(by: "createdAt", descending: true)
                 .addSnapshotListener { snapshot, error in
 
+                    // Tratamento de erro (sem crash, mas explícito)
                     if let error = error {
-                        print("Firestore error:", error)
+                        print("🔥 Firestore error:", error)
                         continuation.yield([])
                         return
                     }
@@ -38,8 +36,9 @@ final class JournalService: JournalReadServiceProtocol, JournalWriteServiceProto
                         return
                     }
 
+                    // Usando Mapper
                     let entries: [JournalEntry] = documents.compactMap { doc in
-                        JournalEntry.fromFirestore(
+                        JournalEntryMapper.fromFirestore(
                             id: doc.documentID,
                             data: doc.data()
                         )
@@ -48,7 +47,7 @@ final class JournalService: JournalReadServiceProtocol, JournalWriteServiceProto
                     continuation.yield(entries)
                 }
 
-            // 🔥 Importantíssimo: cleanup correto
+          
             continuation.onTermination = { _ in
                 listener.remove()
             }
@@ -62,7 +61,7 @@ final class JournalService: JournalReadServiceProtocol, JournalWriteServiceProto
 
             entriesCollection(for: entry.uid)
                 .document(entry.id)
-                .setData(entry.toFirestore()) { error in
+                .setData(JournalEntryMapper.toFirestore(entry)) { error in
 
                     if let error = error {
                         continuation.resume(throwing: error)
@@ -78,7 +77,7 @@ final class JournalService: JournalReadServiceProtocol, JournalWriteServiceProto
 
             entriesCollection(for: entry.uid)
                 .document(entry.id)
-                .updateData(entry.toFirestore()) { error in
+                .updateData(JournalEntryMapper.toFirestore(entry)) { error in
 
                     if let error = error {
                         continuation.resume(throwing: error)
