@@ -3,36 +3,15 @@ import UIKit
 final class HomeViewController: UIViewController {
 
     // MARK: - Properties
-    
-    private let viewModel: HomeViewModelProtocol
 
-    // MARK: - UI Components
+    private var viewModel: HomeViewModelProtocol
 
-    private lazy var tableView: UITableView = {
-        let tv = UITableView()
-        tv.rowHeight          = UITableView.automaticDimension
-        tv.estimatedRowHeight = 60
-        tv.translatesAutoresizingMaskIntoConstraints = false
-        return tv
-    }()
+    private var entries: [EntryDisplayModel] = []
 
-    private lazy var emptyLabel: UILabel = {
-        let lbl = UILabel()
-        lbl.text          = "Nenhuma entrada ainda.\nToque em + para começar."
-        lbl.textAlignment = .center
-        lbl.numberOfLines = 0
-        lbl.textColor     = AppConstants.Colors.text
-        lbl.isHidden      = true
-        lbl.translatesAutoresizingMaskIntoConstraints = false
-        return lbl
-    }()
+    // MARK: - UI
 
-    private lazy var activityIndicator: UIActivityIndicatorView = {
-        let ai = UIActivityIndicatorView(style: .large)
-        ai.hidesWhenStopped = true
-        ai.translatesAutoresizingMaskIntoConstraints = false
-        return ai
-    }()
+    private let tableView = UITableView()
+    private let activityIndicator = UIActivityIndicatorView(style: .large)
 
     // MARK: - Init
 
@@ -41,119 +20,103 @@ final class HomeViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
         setupUI()
-        setupNavigationBar()
         bindViewModel()
+
         viewModel.viewDidLoad()
     }
 
     // MARK: - Setup
 
     private func setupUI() {
-        view.backgroundColor = AppConstants.Colors.background
-        view.addSubview(tableView)
-        view.addSubview(emptyLabel)
-        view.addSubview(activityIndicator)
+        view.backgroundColor = .systemBackground
 
-        tableView.dataSource      = self
-        tableView.delegate        = self
-        tableView.register(EntryCell.self, forCellReuseIdentifier: EntryCell.reuseIdentifier)
-        tableView.tableFooterView = UIView()
-
-        NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            emptyLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-
-            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
-    }
-
-    private func setupNavigationBar() {
-        title = "QuietJournal"
+        title = "Journal"
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .add,
             target: self,
-            action: #selector(newEntryTapped)
+            action: #selector(addTapped)
         )
 
         navigationItem.leftBarButtonItem = UIBarButtonItem(
-            title: "Sair",
+            title: "Logout",
             style: .plain,
             target: self,
             action: #selector(logoutTapped)
         )
+
+        tableView.dataSource = self
+        tableView.delegate = self
+
+        tableView.frame = view.bounds
+        view.addSubview(tableView)
+
+        activityIndicator.center = view.center
+        view.addSubview(activityIndicator)
     }
 
     private func bindViewModel() {
-        viewModel.onLoadingChanged = { [weak self] isLoading in
-            if isLoading {
-                self?.activityIndicator.startAnimating()
-                self?.tableView.isHidden  = true
-                self?.emptyLabel.isHidden = true
-            } else {
-                self?.activityIndicator.stopAnimating()
-                self?.tableView.isHidden = false
+
+        viewModel.onStateChanged = { [weak self] state in
+            guard let self else { return }
+
+            switch state {
+
+            case .idle:
+                break
+
+            case .loading:
+                self.showLoading()
+
+            case .loaded(let entries):
+                self.hideLoading()
+                self.entries = entries
+                self.tableView.reloadData()
+
+            case .error(let error):
+                self.hideLoading()
+                self.showError(error)
             }
-        }
-
-        viewModel.onEntriesUpdated = { [weak self] _ in
-            self?.emptyLabel.isHidden = !(self?.viewModel.displayEntries.isEmpty ?? true)
-            self?.tableView.reloadData()
-        }
-
-        // ✅ CORREÇÃO AQUI
-        viewModel.onError = { [weak self] error in
-
-            let message: String
-
-            switch error {
-            case .deleteFailed:
-                message = "Não foi possível deletar a entrada."
-            case .logoutFailed:
-                message = "Erro ao sair da conta."
-            }
-
-            let alert = UIAlertController(
-                title: "Erro",
-                message: message,
-                preferredStyle: .alert
-            )
-
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-
-            self?.present(alert, animated: true)
         }
     }
 
     // MARK: - Actions
 
-    @objc private func newEntryTapped() {
+    @objc private func addTapped() {
         viewModel.newEntryTapped()
     }
 
     @objc private func logoutTapped() {
+        viewModel.logout()
+    }
+
+    private func showLoading() {
+        activityIndicator.startAnimating()
+    }
+
+    private func hideLoading() {
+        activityIndicator.stopAnimating()
+    }
+
+    private func showError(_ error: HomeError) {
         let alert = UIAlertController(
-            title: "Sair",
-            message: "Deseja encerrar a sessão?",
+            title: "Erro",
+            message: error.localizedDescription,
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Sair", style: .destructive) { [weak self] _ in
-            self?.viewModel.logout()
-        })
+
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+
         present(alert, animated: true)
     }
 }
@@ -164,22 +127,23 @@ extension HomeViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView,
                    numberOfRowsInSection section: Int) -> Int {
-        return viewModel.displayEntries.count
+        entries.count
     }
 
     func tableView(_ tableView: UITableView,
                    cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        guard indexPath.row < viewModel.displayEntries.count else {
-            return UITableViewCell()
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+        let entry = entries[indexPath.row]
+
+        cell.textLabel?.text = entry.title
+        cell.detailTextLabel?.text = entry.subtitle
+        cell.accessoryView = UILabel()
+
+        if let label = cell.accessoryView as? UILabel {
+            label.text = entry.accessory
         }
 
-        let cell = tableView.dequeueReusableCell(
-            withIdentifier: EntryCell.reuseIdentifier,
-            for: indexPath
-        ) as! EntryCell
-
-        cell.configure(with: viewModel.displayEntries[indexPath.row])
         return cell
     }
 }
@@ -190,7 +154,7 @@ extension HomeViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView,
                    didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
+
         viewModel.selectEntry(at: indexPath.row)
     }
 
@@ -198,19 +162,8 @@ extension HomeViewController: UITableViewDelegate {
                    commit editingStyle: UITableViewCell.EditingStyle,
                    forRowAt indexPath: IndexPath) {
 
-        guard editingStyle == .delete else { return }
-
-        let alert = UIAlertController(
-            title: "Deletar entrada",
-            message: "Essa ação não pode ser desfeita. Deseja continuar?",
-            preferredStyle: .alert
-        )
-
-        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Deletar", style: .destructive) { [weak self] _ in
-            self?.viewModel.deleteEntry(at: indexPath.row)
-        })
-
-        present(alert, animated: true)
+        if editingStyle == .delete {
+            viewModel.deleteEntry(at: indexPath.row)
+        }
     }
 }

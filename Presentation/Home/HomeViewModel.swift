@@ -3,19 +3,19 @@ import Foundation
 @MainActor
 final class HomeViewModel: HomeViewModelProtocol {
 
-    // MARK: - Callbacks
+    // MARK: - State
 
-    var onEntriesUpdated: (([EntryDisplayModel]) -> Void)?
-    var onError: ((HomeError) -> Void)?
+    var onStateChanged: ((HomeState) -> Void)?
+
+    // MARK: - Navigation
+
     var onLogout: (() -> Void)?
     var onNewEntry: (() -> Void)?
     var onEditEntry: ((JournalEntry) -> Void)?
-    var onLoadingChanged: ((Bool) -> Void)?
 
-    // MARK: - State
+    // MARK: - Internal State
 
     private var entries: [JournalEntry] = []
-    private(set) var displayEntries: [EntryDisplayModel] = []
 
     // MARK: - Dependencies
 
@@ -66,15 +66,13 @@ final class HomeViewModel: HomeViewModelProtocol {
         let entry = entries[index]
 
         Task {
-            onLoadingChanged?(true)
+            onStateChanged?(.loading)
 
             do {
                 try await deleteEntryUseCase.execute(id: entry.id, uid: uid)
             } catch {
-                onError?(.deleteFailed)
+                onStateChanged?(.error(.deleteFailed))
             }
-
-            onLoadingChanged?(false)
         }
     }
 
@@ -84,7 +82,7 @@ final class HomeViewModel: HomeViewModelProtocol {
             streamTask?.cancel()
             onLogout?()
         } catch {
-            onError?(.logoutFailed)
+            onStateChanged?(.error(.logoutFailed))
         }
     }
 
@@ -92,7 +90,7 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     private func observeEntries() {
 
-        onLoadingChanged?(true)
+        onStateChanged?(.loading)
 
         streamTask = Task { [weak self] in
             guard let self else { return }
@@ -100,10 +98,10 @@ final class HomeViewModel: HomeViewModelProtocol {
             for await entries in getEntriesUseCase.execute(uid: uid) {
 
                 self.entries = entries
-                self.displayEntries = entries.map(EntryDisplayMapper.map)
 
-                self.onEntriesUpdated?(self.displayEntries)
-                self.onLoadingChanged?(false)
+                let display = entries.map(EntryDisplayMapper.map)
+
+                self.onStateChanged?(.loaded(display))
             }
         }
     }

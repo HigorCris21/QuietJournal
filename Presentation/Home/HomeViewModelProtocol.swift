@@ -1,23 +1,23 @@
 import Foundation
 
-protocol HomeViewModelProtocol: AnyObject {
-
-    // MARK: - Callbacks
-
-    var onEntriesUpdated: (([EntryDisplayModel]) -> Void)? { get set }
-    var onError:          ((HomeError) -> Void)?           { get set }
-    var onLogout:         (() -> Void)?                    { get set }
-    var onNewEntry:       (() -> Void)?                    { get set }
-    var onEditEntry:      ((JournalEntry) -> Void)?        { get set }
-    var onLoadingChanged: ((Bool) -> Void)?                { get set }
+protocol HomeViewModelProtocol {
 
     // MARK: - State
 
-    var displayEntries: [EntryDisplayModel] { get }
+    var onStateChanged: ((HomeState) -> Void)? { get set }
+
+    // MARK: - Navigation
+
+    var onLogout: (() -> Void)? { get set }
+    var onNewEntry: (() -> Void)? { get set }
+    var onEditEntry: ((JournalEntry) -> Void)? { get set }
+
+    // MARK: - Lifecycle
+
+    func viewDidLoad()
 
     // MARK: - Actions
 
-    func viewDidLoad()
     func newEntryTapped()
     func selectEntry(at index: Int)
     func deleteEntry(at index: Int)
