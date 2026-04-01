@@ -1,3 +1,4 @@
+
 import Foundation
 
 @MainActor
@@ -100,26 +101,13 @@ final class HomeViewModel: HomeViewModelProtocol {
             for await entries in readService.entriesStream(for: uid) {
 
                 self.entries = entries
-                self.displayEntries = entries.map { Self.map($0) }
+
+                // ✅ USANDO MAPPER (CORRETO)
+                self.displayEntries = entries.map(EntryDisplayMapper.map)
 
                 self.onEntriesUpdated?(self.displayEntries)
                 self.onLoadingChanged?(false)
             }
         }
-    }
-
-    private static func map(_ entry: JournalEntry) -> EntryDisplayModel {
-
-        let preview = entry.body
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .prefix(80)
-            .replacingOccurrences(of: "\n", with: " ")
-
-        return EntryDisplayModel(
-            title: entry.title,
-            bodyPreview: preview.isEmpty ? "Sem conteúdo" : String(preview),
-            subtitle: AppConstants.Formatters.entryDate.string(from: entry.createdAt),
-            accessory: entry.mood.emoji
-        )
     }
 }
