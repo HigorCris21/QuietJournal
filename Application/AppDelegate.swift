@@ -1,6 +1,3 @@
-// Application/AppDelegate.swift
-// QuietJournal — Application
-
 import UIKit
 import FirebaseCore
 
@@ -13,10 +10,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
-        // MARK: - Firebase
         FirebaseApp.configure()
 
-        // MARK: - Window
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
             return true
         }
@@ -24,16 +19,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let window = UIWindow(windowScene: scene)
         self.window = window
 
-        // MARK: - Services
-
         let authService = AuthService()
-        let journalService = JournalService()
 
-        // 🔥 MESMA INSTÂNCIA, DUAS ABSTRAÇÕES
-        let journalReadService: JournalReadServiceProtocol = journalService
-        let journalWriteService: JournalWriteServiceProtocol = journalService
-
-        // MARK: - Coordinator
+        let journalReadService: JournalReadServiceProtocol = JournalReadService()
+        let journalWriteService: JournalWriteServiceProtocol = JournalWriteService()
 
         let coordinator = AppCoordinator(
             window: window,
@@ -43,7 +32,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         )
 
         self.appCoordinator = coordinator
-
         coordinator.start()
 
         return true

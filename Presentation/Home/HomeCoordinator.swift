@@ -3,8 +3,6 @@ import UIKit
 @MainActor
 final class HomeCoordinator: Coordinator {
 
-    // MARK: - Properties
-
     var childCoordinators: [Coordinator] = []
 
     private let navigationController: UINavigationController
@@ -14,8 +12,6 @@ final class HomeCoordinator: Coordinator {
     private let uid: String
 
     var onLogout: (() -> Void)?
-
-    // MARK: - Init
 
     init(navigationController: UINavigationController,
          journalReadService: JournalReadServiceProtocol,
@@ -30,13 +26,9 @@ final class HomeCoordinator: Coordinator {
         self.uid = uid
     }
 
-    // MARK: - Start
-
     func start() {
         showHome()
     }
-
-    // MARK: - Flows
 
     private func showHome() {
 
@@ -71,13 +63,7 @@ final class HomeCoordinator: Coordinator {
             entry: nil
         )
 
-        viewModel.onSaved = { [weak self] in
-            self?.navigationController.popViewController(animated: true)
-        }
-
-        viewModel.onCancelled = { [weak self] in
-            self?.navigationController.popViewController(animated: true)
-        }
+        bindEntryCallbacks(viewModel)
 
         let vc = EntryViewController(viewModel: viewModel)
         navigationController.pushViewController(vc, animated: true)
@@ -91,6 +77,13 @@ final class HomeCoordinator: Coordinator {
             entry: entry
         )
 
+        bindEntryCallbacks(viewModel)
+
+        let vc = EntryViewController(viewModel: viewModel)
+        navigationController.pushViewController(vc, animated: true)
+    }
+
+    private func bindEntryCallbacks(_ viewModel: EntryViewModel) {
         viewModel.onSaved = { [weak self] in
             self?.navigationController.popViewController(animated: true)
         }
@@ -98,8 +91,5 @@ final class HomeCoordinator: Coordinator {
         viewModel.onCancelled = { [weak self] in
             self?.navigationController.popViewController(animated: true)
         }
-
-        let vc = EntryViewController(viewModel: viewModel)
-        navigationController.pushViewController(vc, animated: true)
     }
 }

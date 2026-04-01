@@ -1,5 +1,3 @@
-// JournalEntry.swift
-// QuietJournal — Domain/Models
 import Foundation
 
 struct JournalEntry {

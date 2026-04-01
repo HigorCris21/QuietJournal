@@ -1,13 +1,15 @@
+import Foundation
+
 @MainActor
 final class HomeViewModel: HomeViewModelProtocol {
 
     // MARK: - Callbacks
 
     var onEntriesUpdated: (([EntryDisplayModel]) -> Void)?
-    var onError:          ((String) -> Void)?
-    var onLogout:         (() -> Void)?
-    var onNewEntry:       (() -> Void)?
-    var onEditEntry:      ((JournalEntry) -> Void)?
+    var onError: ((HomeError) -> Void)?
+    var onLogout: (() -> Void)?
+    var onNewEntry: (() -> Void)?
+    var onEditEntry: ((JournalEntry) -> Void)?
     var onLoadingChanged: ((Bool) -> Void)?
 
     // MARK: - State
@@ -22,8 +24,6 @@ final class HomeViewModel: HomeViewModelProtocol {
     private let authService: AuthServiceProtocol
     private let uid: String
 
-    // MARK: - Task Control
-
     private var streamTask: Task<Void, Never>?
 
     // MARK: - Init
@@ -33,10 +33,10 @@ final class HomeViewModel: HomeViewModelProtocol {
          authService: AuthServiceProtocol,
          uid: String) {
 
-        self.readService  = readService
+        self.readService = readService
         self.writeService = writeService
-        self.authService  = authService
-        self.uid          = uid
+        self.authService = authService
+        self.uid = uid
     }
 
     // MARK: - Lifecycle
@@ -71,7 +71,7 @@ final class HomeViewModel: HomeViewModelProtocol {
             do {
                 try await writeService.deleteEntry(id: entry.id, for: uid)
             } catch {
-                onError?("Não foi possível deletar.")
+                onError?(.deleteFailed)
             }
 
             onLoadingChanged?(false)
@@ -84,7 +84,7 @@ final class HomeViewModel: HomeViewModelProtocol {
             streamTask?.cancel()
             onLogout?()
         } catch {
-            onError?("Erro ao sair.")
+            onError?(.logoutFailed)
         }
     }
 

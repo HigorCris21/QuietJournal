@@ -1,16 +1,7 @@
-//
-//  JournalEntryMapper.swift
-//  QuietJournal
-//
-//  Created by Higor  Lo Castro on 01/04/26.
-//
-
 import Foundation
 import FirebaseFirestore
 
 struct JournalEntryMapper {
-
-    // MARK: - To Firestore
 
     static func toFirestore(_ entry: JournalEntry) -> [String: Any] {
         return [
@@ -22,8 +13,6 @@ struct JournalEntryMapper {
             "updatedAt": Timestamp(date: entry.updatedAt)
         ]
     }
-
-    // MARK: - From Firestore
 
     static func fromFirestore(id: String, data: [String: Any]) -> JournalEntry? {
         guard
@@ -49,3 +38,5 @@ struct JournalEntryMapper {
         )
     }
 }
+
+

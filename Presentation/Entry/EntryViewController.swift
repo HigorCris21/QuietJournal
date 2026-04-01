@@ -1,6 +1,3 @@
-// Presentation/Entry/EntryViewController.swift
-// QuietJournal — Presentation/Entry
-
 import UIKit
 
 final class EntryViewController: UIViewController {
@@ -78,8 +75,6 @@ final class EntryViewController: UIViewController {
 
     private func setupUI() {
         view.backgroundColor = AppConstants.Colors.background
-
-        // D: depende do protocolo UITextViewDelegate, não de classe concreta
         bodyTextView.delegate = self
 
         view.addSubview(titleField)
@@ -135,7 +130,6 @@ final class EntryViewController: UIViewController {
         titleField.text = viewModel.initialTitle
 
         if viewModel.initialBody.isEmpty {
-            // Responsabilidade delegada à extensão — ViewController não sabe "como"
             bodyTextView.showPlaceholder(AppConstants.Strings.Journal.bodyPlaceholder)
         } else {
             bodyTextView.text      = viewModel.initialBody
@@ -154,8 +148,24 @@ final class EntryViewController: UIViewController {
             self?.navigationItem.rightBarButtonItem?.isEnabled = !isLoading
         }
 
-        viewModel.onError = { [weak self] message in
-            let alert = UIAlertController(title: "Erro", message: message, preferredStyle: .alert)
+        // ✅ CORREÇÃO AQUI
+        viewModel.onError = { [weak self] error in
+
+            let message: String
+
+            switch error {
+            case .emptyTitle:
+                message = "O título não pode estar vazio."
+            case .saveFailed:
+                message = "Não foi possível salvar a entrada."
+            }
+
+            let alert = UIAlertController(
+                title: "Erro",
+                message: message,
+                preferredStyle: .alert
+            )
+
             alert.addAction(UIAlertAction(title: "OK", style: .default))
             self?.present(alert, animated: true)
         }
@@ -201,7 +211,6 @@ final class EntryViewController: UIViewController {
             ? Mood.allCases[index]
             : .neutral
 
-        // isShowingPlaceholder vive na extensão — não na ViewController
         let bodyText = bodyTextView.isShowingPlaceholder ? "" : bodyTextView.text
 
         viewModel.save(

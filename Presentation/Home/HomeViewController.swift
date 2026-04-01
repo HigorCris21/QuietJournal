@@ -1,6 +1,3 @@
-// Presentation/Home/HomeViewController.swift
-// QuietJournal — Presentation/Home
-
 import UIKit
 
 final class HomeViewController: UIViewController {
@@ -117,9 +114,26 @@ final class HomeViewController: UIViewController {
             self?.tableView.reloadData()
         }
 
-        viewModel.onError = { [weak self] message in
-            let alert = UIAlertController(title: "Erro", message: message, preferredStyle: .alert)
+        // ✅ CORREÇÃO AQUI
+        viewModel.onError = { [weak self] error in
+
+            let message: String
+
+            switch error {
+            case .deleteFailed:
+                message = "Não foi possível deletar a entrada."
+            case .logoutFailed:
+                message = "Erro ao sair da conta."
+            }
+
+            let alert = UIAlertController(
+                title: "Erro",
+                message: message,
+                preferredStyle: .alert
+            )
+
             alert.addAction(UIAlertAction(title: "OK", style: .default))
+
             self?.present(alert, animated: true)
         }
     }
@@ -177,7 +191,6 @@ extension HomeViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView,
                    didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        // Passa o índice
         viewModel.selectEntry(at: indexPath.row)
     }
 
@@ -195,7 +208,6 @@ extension HomeViewController: UITableViewDelegate {
 
         alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
         alert.addAction(UIAlertAction(title: "Deletar", style: .destructive) { [weak self] _ in
-            // Passa o índice
             self?.viewModel.deleteEntry(at: indexPath.row)
         })
 
