@@ -15,9 +15,11 @@ final class GetEntriesUseCase {
         self.service = service
     }
 
-    func execute(uid: String) -> AsyncStream<[JournalEntry]> {
-        service.entriesStream(for: uid)
+    func execute(userId: String) -> AsyncStream<[JournalEntry]> {
+        return service.observeEntries(userId: userId) 
     }
 }
+
+
 
 

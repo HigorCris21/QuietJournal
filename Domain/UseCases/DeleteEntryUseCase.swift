@@ -15,7 +15,7 @@ final class DeleteEntryUseCase {
         self.service = service
     }
 
-    func execute(id: String, uid: String) async throws {
-        try await service.deleteEntry(id: id, for: uid)
+    func execute(entryId: String, userId: String) async throws {
+        try await service.deleteEntry(entryId: entryId, userId: userId)
     }
 }

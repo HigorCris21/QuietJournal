@@ -1,11 +1,8 @@
-// Presentation/Auth/Register/RegisterViewModel.swift
-// QuietJournal — Presentation/Auth
-
 import Foundation
 
 final class RegisterViewModel {
 
-    // MARK: - Callbacks para a ViewController
+    // MARK: - Callbacks
 
     var onRegisterSuccess: (() -> Void)?
     var onBackTapped:      (() -> Void)?
@@ -48,17 +45,22 @@ final class RegisterViewModel {
 
         onLoadingChanged?(true)
 
-        authService.register(email: email, password: password) { [weak self] result in
-            self?.onLoadingChanged?(false)
+        Task { [weak self] in
+            guard let self else { return }
 
-            switch result {
-            case .success:
-                self?.onRegisterSuccess?()
+            do {
+                _ = try await authService.register(email: email, password: password)
 
-            case .failure(let error):
+                self.onLoadingChanged?(false)
+                self.onRegisterSuccess?()
+
+            } catch {
+                self.onLoadingChanged?(false)
+
                 let message = (error as? AuthError)?.localizedDescription
                     ?? AppConstants.Strings.Auth.errorUnknown
-                self?.onError?(message)
+
+                self.onError?(message)
             }
         }
     }

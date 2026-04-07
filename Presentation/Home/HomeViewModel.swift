@@ -69,7 +69,11 @@ final class HomeViewModel: HomeViewModelProtocol {
             onStateChanged?(.loading)
 
             do {
-                try await deleteEntryUseCase.execute(id: entry.id, uid: uid)
+                // ✅ CORRIGIDO AQUI
+                try await deleteEntryUseCase.execute(
+                    entryId: entry.id,
+                    userId: uid
+                )
             } catch {
                 onStateChanged?(.error(.deleteFailed))
             }
@@ -95,7 +99,8 @@ final class HomeViewModel: HomeViewModelProtocol {
         streamTask = Task { [weak self] in
             guard let self else { return }
 
-            for await entries in getEntriesUseCase.execute(uid: uid) {
+            // ✅ CORRIGIDO AQUI
+            for await entries in getEntriesUseCase.execute(userId: uid) {
 
                 self.entries = entries
 

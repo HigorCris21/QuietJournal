@@ -5,9 +5,9 @@ final class JournalWriteService: JournalWriteServiceProtocol {
 
     private let db = Firestore.firestore()
 
-    private func entriesCollection(for uid: String) -> CollectionReference {
+    private func entriesCollection(for userId: String) -> CollectionReference {
         db.collection("users")
-            .document(uid)
+            .document(userId)
             .collection("entries")
     }
 
@@ -43,11 +43,11 @@ final class JournalWriteService: JournalWriteServiceProtocol {
         }
     }
 
-    func deleteEntry(id: String, for uid: String) async throws {
+    func deleteEntry(entryId: String, userId: String) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
 
-            entriesCollection(for: uid)
-                .document(id)
+            entriesCollection(for: userId)
+                .document(entryId)
                 .delete { error in
 
                     if let error = error {

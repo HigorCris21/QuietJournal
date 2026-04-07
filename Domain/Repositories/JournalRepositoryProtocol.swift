@@ -1,17 +1,22 @@
 //
-//  JournalWriteServiceProtocol.swift
+//  JournalRepositoryProtocol.swift
 //  QuietJournal
 //
-//  Created by Higor  Lo Castro on 30/03/26.
+//  Created by Higor  Lo Castro on 07/04/26.
 //
 
 import Foundation
 
-protocol JournalWriteServiceProtocol: AnyObject {
-
+protocol JournalRepositoryProtocol {
+    
+    func observeEntries(userId: String) -> AsyncStream<[JournalEntry]>
+    
     func createEntry(_ entry: JournalEntry) async throws
     
     func updateEntry(_ entry: JournalEntry) async throws
     
     func deleteEntry(entryId: String, userId: String) async throws
 }
+
+
+

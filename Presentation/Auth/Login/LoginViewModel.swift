@@ -1,11 +1,8 @@
-// Presentation/Auth/Login/LoginViewModel.swift
-// QuietJournal — Presentation/Auth
-
 import Foundation
 
 final class LoginViewModel {
 
-    // MARK: - Callbacks para a ViewController
+    // MARK: - Callbacks
 
     var onLoginSuccess:   (() -> Void)?
     var onRegisterTapped: (() -> Void)?
@@ -38,17 +35,22 @@ final class LoginViewModel {
 
         onLoadingChanged?(true)
 
-        authService.login(email: email, password: password) { [weak self] result in
-            self?.onLoadingChanged?(false)
+        Task { [weak self] in
+            guard let self else { return }
 
-            switch result {
-            case .success:
-                self?.onLoginSuccess?()
+            do {
+                _ = try await authService.login(email: email, password: password)
 
-            case .failure(let error):                
+                self.onLoadingChanged?(false)
+                self.onLoginSuccess?()
+
+            } catch {
+                self.onLoadingChanged?(false)
+
                 let message = (error as? AuthError)?.localizedDescription
                     ?? AppConstants.Strings.Auth.errorUnknown
-                self?.onError?(message)
+
+                self.onError?(message)
             }
         }
     }
