@@ -2,58 +2,63 @@ import Foundation
 
 final class EntryViewModel {
 
-    // MARK: - Callbacks
-
-    var onSaved: (() -> Void)?
-    var onCancelled: (() -> Void)?
-    var onError: ((EntryError) -> Void)?
-    var onLoadingChanged: ((Bool) -> Void)?
-
     // MARK: - Dependencies
 
     private let createEntryUseCase: CreateEntryUseCase
     private let updateEntryUseCase: UpdateEntryUseCase
+
+    // MARK: - State
+
     private let uid: String
+    private let entry: JournalEntry?
 
-    private let existingEntry: JournalEntry?
+    // MARK: - Outputs
 
-    // MARK: - Computed
-
-    var isEditing: Bool {
-        existingEntry != nil
-    }
-
-    var initialTitle: String {
-        existingEntry?.title ?? ""
-    }
-
-    var initialBody: String {
-        existingEntry?.body ?? ""
-    }
-
-    var initialMood: Mood {
-        existingEntry?.mood ?? .neutral
-    }
+    var onSaved: (() -> Void)?
+    var onCancelled: (() -> Void)?
+    var onLoadingChanged: ((Bool) -> Void)?
+    var onError: ((String) -> Void)?
 
     // MARK: - Init
 
-    init(createEntryUseCase: CreateEntryUseCase,
-         updateEntryUseCase: UpdateEntryUseCase,
-         uid: String,
-         entry: JournalEntry?) {
-
+    init(
+        createEntryUseCase: CreateEntryUseCase,
+        updateEntryUseCase: UpdateEntryUseCase,
+        uid: String,
+        entry: JournalEntry?
+    ) {
         self.createEntryUseCase = createEntryUseCase
         self.updateEntryUseCase = updateEntryUseCase
         self.uid = uid
-        self.existingEntry = entry
+        self.entry = entry
+    }
+
+    // MARK: - Derived State
+
+    var isEditing: Bool {
+        entry != nil
+    }
+
+    var initialTitle: String {
+        entry?.title ?? ""
+    }
+
+    var initialBody: String {
+        entry?.body ?? ""
+    }
+
+    var initialMood: Mood {
+        entry?.mood ?? .neutral
     }
 
     // MARK: - Actions
 
     func save(title: String, body: String, mood: Mood) {
 
-        guard !title.trimmingCharacters(in: .whitespaces).isEmpty else {
-            onError?(.emptyTitle)
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedTitle.isEmpty else {
+            onError?("O título não pode estar vazio.")
             return
         }
 
@@ -61,48 +66,44 @@ final class EntryViewModel {
 
         Task {
             do {
-                if let existing = existingEntry {
-                    try await update(existing: existing, title: title, body: body, mood: mood)
+
+                if let entry {
+
+                    // UPDATE (usa UseCase que recebe JournalEntry)
+                    var updated = entry
+                    updated.title = trimmedTitle
+                    updated.body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+                    updated.mood = mood
+                    updated.updatedAt = Date()
+
+                    try await updateEntryUseCase.execute(updated)
+
                 } else {
-                    try await create(title: title, body: body, mood: mood)
+
+                    // CREATE (usa UseCase com parâmetros separados)
+                    try await createEntryUseCase.execute(
+                        title: trimmedTitle,
+                        body: body,
+                        mood: mood,
+                        uid: uid
+                    )
                 }
 
-                onLoadingChanged?(false)
-                onSaved?()
+                await MainActor.run {
+                    self.onLoadingChanged?(false)
+                    self.onSaved?()
+                }
 
             } catch {
-                onLoadingChanged?(false)
-                onError?(.saveFailed)
+                await MainActor.run {
+                    self.onLoadingChanged?(false)
+                    self.onError?("Erro ao salvar entrada.")
+                }
             }
         }
     }
 
     func cancel() {
         onCancelled?()
-    }
-
-    // MARK: - Private
-    
-    private func create(title: String, body: String, mood: Mood) async throws {
-        try await createEntryUseCase.execute(
-            title: title,
-            body: body,
-            mood: mood,
-            uid: uid
-        )
-    }
-
-    private func update(existing: JournalEntry,
-                        title: String,
-                        body: String,
-                        mood: Mood) async throws {
-
-        var updated = existing
-        updated.title = title
-        updated.body = body
-        updated.mood = mood
-        updated.updatedAt = Date()
-
-        try await updateEntryUseCase.execute(updated)
     }
 }

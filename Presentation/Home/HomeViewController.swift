@@ -2,168 +2,114 @@ import UIKit
 
 final class HomeViewController: UIViewController {
 
-    // MARK: - Properties
+    private enum Section {
+        case main
+    }
 
-    private var viewModel: HomeViewModelProtocol
+    private let viewModel: HomeViewModel
 
-    private var entries: [EntryDisplayModel] = []
-
-    // MARK: - UI
-
-    private let tableView = UITableView()
+    private let tableView = UITableView(frame: .zero, style: .plain)
     private let activityIndicator = UIActivityIndicatorView(style: .large)
 
-    // MARK: - Init
+    private var dataSource: UITableViewDiffableDataSource<Section, EntryDisplayModel>!
 
-    init(viewModel: HomeViewModelProtocol) {
+    init(viewModel: HomeViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
 
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        fatalError()
     }
-
-    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        setupUI()
-        bindViewModel()
-
-        viewModel.viewDidLoad()
-    }
-
-    // MARK: - Setup
-
-    private func setupUI() {
         view.backgroundColor = .systemBackground
 
-        title = "Journal"
+        setupTable()
+        setupDataSource()
+        bind()
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .add,
-            target: self,
-            action: #selector(addTapped)
-        )
+        viewModel.start()
+    }
 
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            title: "Logout",
-            style: .plain,
-            target: self,
-            action: #selector(logoutTapped)
-        )
-
-        tableView.dataSource = self
-        tableView.delegate = self
-
-        tableView.frame = view.bounds
+    private func setupTable() {
+        tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
 
-        activityIndicator.center = view.center
-        view.addSubview(activityIndicator)
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+
+        tableView.register(EntryCell.self, forCellReuseIdentifier: EntryCell.reuseIdentifier)
+        tableView.delegate = self
     }
 
-    private func bindViewModel() {
+    private func setupDataSource() {
+        dataSource = UITableViewDiffableDataSource<Section, EntryDisplayModel>(
+            tableView: tableView
+        ) { tableView, indexPath, model in
 
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: EntryCell.reuseIdentifier,
+                for: indexPath
+            ) as! EntryCell
+
+            cell.configure(with: model)
+            return cell
+        }
+    }
+
+    private func bind() {
         viewModel.onStateChanged = { [weak self] state in
-            guard let self else { return }
-
-            switch state {
-
-            case .idle:
-                break
-
-            case .loading:
-                self.showLoading()
-
-            case .loaded(let entries):
-                self.hideLoading()
-                self.entries = entries
-                self.tableView.reloadData()
-
-            case .error(let error):
-                self.hideLoading()
-                self.showError(error)
-            }
+            self?.render(state)
         }
     }
 
-    // MARK: - Actions
+    private func render(_ state: HomeState) {
 
-    @objc private func addTapped() {
-        viewModel.newEntryTapped()
-    }
+        switch state {
 
-    @objc private func logoutTapped() {
-        viewModel.logout()
-    }
+        case .loading:
+            activityIndicator.startAnimating()
 
-    private func showLoading() {
-        activityIndicator.startAnimating()
-    }
+        case .loaded(let entries):
+            activityIndicator.stopAnimating()
+            apply(entries)
 
-    private func hideLoading() {
-        activityIndicator.stopAnimating()
-    }
+        case .empty:
+            activityIndicator.stopAnimating()
+            apply([])
 
-    private func showError(_ error: HomeError) {
-        let alert = UIAlertController(
-            title: "Erro",
-            message: error.localizedDescription,
-            preferredStyle: .alert
-        )
+        case .error:
+            activityIndicator.stopAnimating()
+            apply([])
 
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-
-        present(alert, animated: true)
-    }
-}
-
-// MARK: - UITableViewDataSource
-
-extension HomeViewController: UITableViewDataSource {
-
-    func tableView(_ tableView: UITableView,
-                   numberOfRowsInSection section: Int) -> Int {
-        entries.count
-    }
-
-    func tableView(_ tableView: UITableView,
-                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
-        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-        let entry = entries[indexPath.row]
-
-        cell.textLabel?.text = entry.title
-        cell.detailTextLabel?.text = entry.subtitle
-        cell.accessoryView = UILabel()
-
-        if let label = cell.accessoryView as? UILabel {
-            label.text = entry.accessory
+        case .idle:
+            break
         }
+    }
 
-        return cell
+    private func apply(_ entries: [JournalEntry]) {
+
+        let models = entries.map { EntryDisplayMapper.map($0) }
+
+        var snapshot = NSDiffableDataSourceSnapshot<Section, EntryDisplayModel>()
+        snapshot.appendSections([.main])
+        snapshot.appendItems(models)
+
+        dataSource.apply(snapshot, animatingDifferences: true)
     }
 }
-
-// MARK: - UITableViewDelegate
 
 extension HomeViewController: UITableViewDelegate {
 
-    func tableView(_ tableView: UITableView,
-                   didSelectRowAt indexPath: IndexPath) {
-
-        viewModel.selectEntry(at: indexPath.row)
-    }
-
-    func tableView(_ tableView: UITableView,
-                   commit editingStyle: UITableViewCell.EditingStyle,
-                   forRowAt indexPath: IndexPath) {
-
-        if editingStyle == .delete {
-            viewModel.deleteEntry(at: indexPath.row)
-        }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        guard let model = dataSource.itemIdentifier(for: indexPath) else { return }
+        viewModel.selectEntryById(model.id)
     }
 }

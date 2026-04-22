@@ -1,14 +1,9 @@
-// Presentation/Home/EntryCell.swift
-// QuietJournal — Presentation/Home
-
 import UIKit
 
 final class EntryCell: UITableViewCell {
 
-    // MARK: - Reutilização
     static let reuseIdentifier = "EntryCell"
 
-    // MARK: - Layout Constants
     private enum Layout {
         static let leadingPadding: CGFloat = 12
         static let trailingPadding: CGFloat = 8
@@ -17,8 +12,6 @@ final class EntryCell: UITableViewCell {
         static let stackSpacing: CGFloat = 3
         static let moodSize: CGFloat = 44
     }
-
-    // MARK: - UI Components
 
     private let moodLabel: UILabel = {
         let lbl = UILabel()
@@ -61,23 +54,18 @@ final class EntryCell: UITableViewCell {
         return sv
     }()
 
-    // MARK: - Init
-
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
     }
 
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) not used")
+        fatalError()
     }
-
-    // MARK: - Setup
 
     private func setupUI() {
         accessoryType = .disclosureIndicator
         selectionStyle = .default
-        backgroundColor = .systemBackground
 
         contentView.addSubview(moodLabel)
         contentView.addSubview(textStack)
@@ -94,38 +82,18 @@ final class EntryCell: UITableViewCell {
         ])
     }
 
-    // MARK: - Reuse
-
     override func prepareForReuse() {
         super.prepareForReuse()
-
         moodLabel.text = nil
         titleLabel.text = nil
         previewLabel.text = nil
         dateLabel.text = nil
     }
 
-    // MARK: - Configure
-
     func configure(with model: EntryDisplayModel) {
         moodLabel.text = model.accessory.isEmpty ? "🙂" : model.accessory
         titleLabel.text = model.title
         previewLabel.text = model.bodyPreview
         dateLabel.text = model.subtitle
-
-        configureAccessibility()
-    }
-
-    // MARK: - Accessibility
-
-    private func configureAccessibility() {
-        isAccessibilityElement = true
-        accessibilityLabel = [
-            titleLabel.text,
-            previewLabel.text,
-            dateLabel.text
-        ]
-        .compactMap { $0 }
-        .joined(separator: ", ")
     }
 }

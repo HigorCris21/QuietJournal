@@ -1,5 +1,3 @@
-// Application/AppCoordinator.swift
-
 import UIKit
 
 @MainActor
@@ -8,28 +6,23 @@ final class AppCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
 
     private let window: UIWindow
-    private var navigationController: UINavigationController?
+    private let diContainer: AppDIContainer
 
-    private let authService: AuthServiceProtocol
-    private let journalReadService: JournalReadServiceProtocol
-    private let journalWriteService: JournalWriteServiceProtocol
+    // MARK: - Init
 
-    init(window: UIWindow,
-         authService: AuthServiceProtocol,
-         journalReadService: JournalReadServiceProtocol,
-         journalWriteService: JournalWriteServiceProtocol) {
-
+    init(
+        window: UIWindow,
+        diContainer: AppDIContainer
+    ) {
         self.window = window
-        self.authService = authService
-        self.journalReadService = journalReadService
-        self.journalWriteService = journalWriteService
-        self.navigationController = UINavigationController()
-
-        window.rootViewController = navigationController
+        self.diContainer = diContainer
     }
 
+    // MARK: - Start
+
     func start() {
-        if authService.currentUserID != nil {
+
+        if diContainer.makeAuthService().currentUserID != nil {
             showHome()
         } else {
             showAuth()
@@ -38,26 +31,22 @@ final class AppCoordinator: Coordinator {
         window.makeKeyAndVisible()
     }
 
-    private func showAuth() {
-        let nav = UINavigationController()
-        navigationController = nav
+    // MARK: - Auth
 
-        UIView.transition(
-            with: window,
-            duration: 0.3,
-            options: .transitionCrossDissolve,
-            animations: { [weak self] in
-                self?.window.rootViewController = nav
-            }
-        )
+    private func showAuth() {
+
+        let nav = UINavigationController()
+
+        window.rootViewController = nav
 
         let authCoordinator = AuthCoordinator(
             navigationController: nav,
-            authService: authService
+            authService: diContainer.makeAuthService()
         )
 
         authCoordinator.onAuthCompleted = { [weak self, weak authCoordinator] in
             guard let self, let authCoordinator else { return }
+
             self.removeChild(authCoordinator)
             self.showHome()
         }
@@ -66,36 +55,27 @@ final class AppCoordinator: Coordinator {
         authCoordinator.start()
     }
 
+    // MARK: - Home
+
     private func showHome() {
 
-        // 🔥 SOURCE OF TRUTH
-        guard let uid = authService.currentUserID else {
+        guard let uid = diContainer.makeAuthService().currentUserID else {
             showAuth()
             return
         }
 
         let nav = UINavigationController()
-        navigationController = nav
-
-        UIView.transition(
-            with: window,
-            duration: 0.3,
-            options: .transitionCrossDissolve,
-            animations: { [weak self] in
-                self?.window.rootViewController = nav
-            }
-        )
+        window.rootViewController = nav
 
         let homeCoordinator = HomeCoordinator(
             navigationController: nav,
-            journalReadService: journalReadService,
-            journalWriteService: journalWriteService,
-            authService: authService,
-            uid: uid // ✅ CORREÇÃO CRÍTICA
+            diContainer: diContainer,
+            uid: uid
         )
 
         homeCoordinator.onLogout = { [weak self, weak homeCoordinator] in
             guard let self, let homeCoordinator else { return }
+
             self.removeChild(homeCoordinator)
             self.showAuth()
         }

@@ -1,5 +1,4 @@
 import UIKit
-import FirebaseCore
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,28 +6,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
     private var appCoordinator: AppCoordinator?
 
-    func application(_ application: UIApplication,
-                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
-        FirebaseApp.configure()
+    private let diContainer = AppDIContainer()
 
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
-            return true
-        }
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
 
-        let window = UIWindow(windowScene: scene)
+        let window = UIWindow(frame: UIScreen.main.bounds)
         self.window = window
 
-        let authService = AuthService()
-
-        let journalReadService: JournalReadServiceProtocol = JournalReadService()
-        let journalWriteService: JournalWriteServiceProtocol = JournalWriteService()
-
+        // ✅ NOVO PADRÃO COM DI
         let coordinator = AppCoordinator(
             window: window,
-            authService: authService,
-            journalReadService: journalReadService,
-            journalWriteService: journalWriteService
+            diContainer: diContainer
         )
 
         self.appCoordinator = coordinator

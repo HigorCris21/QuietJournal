@@ -1,5 +1,3 @@
-// Presentation/Home/EntryDisplayMapper.swift
-
 import Foundation
 
 struct EntryDisplayMapper {
@@ -12,6 +10,7 @@ struct EntryDisplayMapper {
             .replacingOccurrences(of: "\n", with: " ")
 
         return EntryDisplayModel(
+            id: entry.id,
             title: entry.title,
             bodyPreview: preview.isEmpty ? "Sem conteúdo" : String(preview),
             subtitle: AppConstants.Formatters.entryDate.string(from: entry.createdAt),
