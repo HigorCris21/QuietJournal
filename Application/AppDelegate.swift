@@ -1,11 +1,11 @@
 import UIKit
+import Firebase
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
     private var appCoordinator: AppCoordinator?
-
 
     private let diContainer = AppDIContainer()
 
@@ -14,10 +14,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
 
+        //inicializa Firebase primeiro
+        FirebaseApp.configure()
+
         let window = UIWindow(frame: UIScreen.main.bounds)
         self.window = window
 
-        // ✅ NOVO PADRÃO COM DI
         let coordinator = AppCoordinator(
             window: window,
             diContainer: diContainer
