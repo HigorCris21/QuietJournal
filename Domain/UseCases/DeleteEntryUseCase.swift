@@ -1,21 +1,29 @@
-//
-//  DeleteEntryUseCase.swift
-//  QuietJournal
-//
-//  Created by Higor  Lo Castro on 01/04/26.
-//
-
 import Foundation
 
 final class DeleteEntryUseCase {
 
-    private let service: JournalWriteServiceProtocol
+    // MARK: - Dependencies
 
-    init(service: JournalWriteServiceProtocol) {
-        self.service = service
+    private let repository: JournalRepositoryProtocol
+
+    // MARK: - Init
+
+    init(repository: JournalRepositoryProtocol) {
+        self.repository = repository
     }
 
+    // MARK: - Execute
+
     func execute(entryId: String, userId: String) async throws {
-        try await service.deleteEntry(entryId: entryId, userId: userId)
+
+        // (opcional) validação simples
+        guard !entryId.isEmpty else {
+            throw HomeError.deleteFailed
+        }
+
+        try await repository.deleteEntry(
+            entryId: entryId,
+            userId: userId
+        )
     }
 }

@@ -1,25 +1,25 @@
 //
-//  Untitled.swift
+//  GetEntriesUseCase.swift
 //  QuietJournal
-//
-//  Created by Higor  Lo Castro on 01/04/26.
 //
 
 import Foundation
 
 final class GetEntriesUseCase {
 
-    private let service: JournalReadServiceProtocol
+    // MARK: - Dependencies
 
-    init(service: JournalReadServiceProtocol) {
-        self.service = service
+    private let repository: JournalRepositoryProtocol
+
+    // MARK: - Init
+
+    init(repository: JournalRepositoryProtocol) {
+        self.repository = repository
     }
+
+    // MARK: - Execute
 
     func execute(userId: String) -> AsyncStream<[JournalEntry]> {
-        return service.observeEntries(userId: userId) 
+        return repository.observeEntries(userId: userId)
     }
 }
-
-
-
-

@@ -2,20 +2,55 @@
 //  CreateEntryUseCase.swift
 //  QuietJournal
 //
-//  Created by Higor  Lo Castro on 01/04/26.
-//
 
 import Foundation
 
 final class CreateEntryUseCase {
 
-    private let service: JournalWriteServiceProtocol
+    // MARK: - Dependencies
 
-    init(service: JournalWriteServiceProtocol) {
-        self.service = service
+    private let repository: JournalRepositoryProtocol
+
+    // MARK: - Init
+
+    init(repository: JournalRepositoryProtocol) {
+        self.repository = repository
     }
 
-    func execute(_ entry: JournalEntry) async throws {
-        try await service.createEntry(entry)
+    // MARK: - Execute
+
+    func execute(
+        title: String,
+        body: String,
+        mood: Mood,
+        uid: String
+    ) async throws {
+
+        // 1. Validação (REGRA DE NEGÓCIO)
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedTitle.isEmpty else {
+            throw EntryError.emptyTitle
+        }
+
+        // 2. Normalização (opcional, mas profissional)
+        let normalizedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 3. Regra temporal (centralizada)
+        let now = Date()
+
+        // 4. Criação da entidade (DOMÍNIO)
+        let entry = JournalEntry(
+            id: UUID().uuidString,
+            uid: uid,
+            title: trimmedTitle,
+            body: normalizedBody,
+            mood: mood,
+            createdAt: now,
+            updatedAt: now
+        )
+
+        // 5. Persistência via repository (NÃO service direto)
+        try await repository.createEntry(entry)
     }
 }

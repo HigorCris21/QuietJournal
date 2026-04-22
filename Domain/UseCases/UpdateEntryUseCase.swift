@@ -1,21 +1,32 @@
-//
-//  UpdateEntryUseCase.swift
-//  QuietJournal
-//
-//  Created by Higor  Lo Castro on 01/04/26.
-//
-
 import Foundation
 
 final class UpdateEntryUseCase {
 
-    private let service: JournalWriteServiceProtocol
+    // MARK: - Dependencies
 
-    init(service: JournalWriteServiceProtocol) {
-        self.service = service
+    private let repository: JournalRepositoryProtocol
+
+    // MARK: - Init
+
+    init(repository: JournalRepositoryProtocol) {
+        self.repository = repository
     }
 
+    // MARK: - Execute
+
     func execute(_ entry: JournalEntry) async throws {
-        try await service.updateEntry(entry)
+
+        let trimmedTitle = entry.title.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedTitle.isEmpty else {
+            throw EntryError.emptyTitle
+        }
+
+        var updated = entry
+        updated.title = trimmedTitle
+        updated.body = entry.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        updated.updatedAt = Date()
+
+        try await repository.updateEntry(updated)
     }
 }

@@ -3,22 +3,37 @@ import UIKit
 @MainActor
 final class HomeCoordinator: Coordinator {
 
+    // MARK: - Properties
+
     var childCoordinators: [Coordinator] = []
 
     private let navigationController: UINavigationController
-    private let journalReadService: JournalReadServiceProtocol
-    private let journalWriteService: JournalWriteServiceProtocol
     private let authService: AuthServiceProtocol
     private let uid: String
 
+    // Services
+    private let journalReadService: JournalReadServiceProtocol
+    private let journalWriteService: JournalWriteServiceProtocol
+
+    // Repository
+    private lazy var journalRepository: JournalRepositoryProtocol = {
+        JournalRepository(
+            readService: journalReadService,
+            writeService: journalWriteService
+        )
+    }()
+
     var onLogout: (() -> Void)?
 
-    init(navigationController: UINavigationController,
-         journalReadService: JournalReadServiceProtocol,
-         journalWriteService: JournalWriteServiceProtocol,
-         authService: AuthServiceProtocol,
-         uid: String) {
+    // MARK: - Init
 
+    init(
+        navigationController: UINavigationController,
+        journalReadService: JournalReadServiceProtocol,
+        journalWriteService: JournalWriteServiceProtocol,
+        authService: AuthServiceProtocol,
+        uid: String
+    ) {
         self.navigationController = navigationController
         self.journalReadService = journalReadService
         self.journalWriteService = journalWriteService
@@ -26,14 +41,19 @@ final class HomeCoordinator: Coordinator {
         self.uid = uid
     }
 
+    // MARK: - Start
+
     func start() {
         showHome()
     }
 
+    // MARK: - Home
+
     private func showHome() {
 
-        let getEntriesUseCase = GetEntriesUseCase(service: journalReadService)
-        let deleteEntryUseCase = DeleteEntryUseCase(service: journalWriteService)
+        // ✅ TODOS os UseCases agora usam repository
+        let getEntriesUseCase = GetEntriesUseCase(repository: journalRepository)
+        let deleteEntryUseCase = DeleteEntryUseCase(repository: journalRepository)
 
         let viewModel = HomeViewModel(
             getEntriesUseCase: getEntriesUseCase,
@@ -62,8 +82,8 @@ final class HomeCoordinator: Coordinator {
 
     private func showNewEntry() {
 
-        let createUseCase = CreateEntryUseCase(service: journalWriteService)
-        let updateUseCase = UpdateEntryUseCase(service: journalWriteService)
+        let createUseCase = CreateEntryUseCase(repository: journalRepository)
+        let updateUseCase = UpdateEntryUseCase(repository: journalRepository)
 
         let viewModel = EntryViewModel(
             createEntryUseCase: createUseCase,
@@ -80,8 +100,8 @@ final class HomeCoordinator: Coordinator {
 
     private func showEditEntry(_ entry: JournalEntry) {
 
-        let createUseCase = CreateEntryUseCase(service: journalWriteService)
-        let updateUseCase = UpdateEntryUseCase(service: journalWriteService)
+        let createUseCase = CreateEntryUseCase(repository: journalRepository)
+        let updateUseCase = UpdateEntryUseCase(repository: journalRepository)
 
         let viewModel = EntryViewModel(
             createEntryUseCase: createUseCase,
@@ -95,6 +115,8 @@ final class HomeCoordinator: Coordinator {
         let vc = EntryViewController(viewModel: viewModel)
         navigationController.pushViewController(vc, animated: true)
     }
+
+    // MARK: - Bindings
 
     private func bindEntryCallbacks(_ viewModel: EntryViewModel) {
         viewModel.onSaved = { [weak self] in

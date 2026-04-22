@@ -82,22 +82,14 @@ final class EntryViewModel {
     }
 
     // MARK: - Private
-
+    
     private func create(title: String, body: String, mood: Mood) async throws {
-
-        let now = Date()
-
-        let entry = JournalEntry(
-            id: UUID().uuidString,
-            uid: uid,
+        try await createEntryUseCase.execute(
             title: title,
             body: body,
             mood: mood,
-            createdAt: now,
-            updatedAt: now
+            uid: uid
         )
-
-        try await createEntryUseCase.execute(entry)
     }
 
     private func update(existing: JournalEntry,
