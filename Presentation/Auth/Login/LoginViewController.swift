@@ -21,6 +21,18 @@ final class LoginViewController: UIViewController {
         return tf
     }()
 
+    private lazy var iconImageView: UIImageView = {
+        let appLogo = UIImage(named: "AppLogo")
+        let logoImage = appLogo ?? UIImage(systemName: "book.closed.fill")
+        let imageView = UIImageView(image: logoImage)
+        if appLogo == nil {
+            imageView.tintColor = AppConstants.Colors.primary
+        }
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+
     private lazy var passwordField: UITextField = {
         let tf = UITextField()
         tf.placeholder  = AppConstants.Strings.Auth.passwordPlaceholder
@@ -78,6 +90,7 @@ final class LoginViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = AppConstants.Colors.background
 
+        view.addSubview(iconImageView)
         view.addSubview(emailField)
         view.addSubview(passwordField)
         view.addSubview(loginButton)
@@ -85,6 +98,11 @@ final class LoginViewController: UIViewController {
         view.addSubview(activityIndicator)
 
         NSLayoutConstraint.activate([
+            iconImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            iconImageView.bottomAnchor.constraint(equalTo: emailField.topAnchor, constant: -20),
+            iconImageView.widthAnchor.constraint(equalToConstant: 72),
+            iconImageView.heightAnchor.constraint(equalToConstant: 72),
+
             emailField.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             emailField.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -80),
             emailField.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.85),

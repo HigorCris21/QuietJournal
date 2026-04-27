@@ -41,16 +41,19 @@ final class LoginViewModel {
             do {
                 _ = try await authService.login(email: email, password: password)
 
-                self.onLoadingChanged?(false)
-                self.onLoginSuccess?()
+                await MainActor.run {
+                    self.onLoadingChanged?(false)
+                    self.onLoginSuccess?()
+                }
 
             } catch {
-                self.onLoadingChanged?(false)
-
                 let message = (error as? AuthError)?.localizedDescription
                     ?? AppConstants.Strings.Auth.errorUnknown
 
-                self.onError?(message)
+                await MainActor.run {
+                    self.onLoadingChanged?(false)
+                    self.onError?(message)
+                }
             }
         }
     }

@@ -51,16 +51,19 @@ final class RegisterViewModel {
             do {
                 _ = try await authService.register(email: email, password: password)
 
-                self.onLoadingChanged?(false)
-                self.onRegisterSuccess?()
+                await MainActor.run {
+                    self.onLoadingChanged?(false)
+                    self.onRegisterSuccess?()
+                }
 
             } catch {
-                self.onLoadingChanged?(false)
-
                 let message = (error as? AuthError)?.localizedDescription
                     ?? AppConstants.Strings.Auth.errorUnknown
 
-                self.onError?(message)
+                await MainActor.run {
+                    self.onLoadingChanged?(false)
+                    self.onError?(message)
+                }
             }
         }
     }
