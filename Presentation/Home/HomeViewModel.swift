@@ -45,16 +45,22 @@ final class HomeViewModel {
             guard let self = self else { return }
 
             let stream = self.getEntriesUseCase.execute(userId: self.uid)
+            var receivedAnySnapshot = false
 
             for await entries in stream {
 
                 if Task.isCancelled { return }
+                receivedAnySnapshot = true
 
                 self.currentEntries = entries
 
                 self.state = entries.isEmpty
                     ? .empty
                     : .loaded(entries)
+            }
+
+            if !Task.isCancelled && !receivedAnySnapshot {
+                self.state = .error(.unknown)
             }
         }
     }
